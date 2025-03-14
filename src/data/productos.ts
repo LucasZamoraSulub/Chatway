@@ -1,0 +1,51 @@
+export const productos = [
+    {
+      id: 1,
+      nombre: "Cámara IP SmartView",
+      categoria: "Cámaras de Seguridad",
+      caracteristicas: ["Visión nocturna", "Detección de movimiento", "Resolución 1080p"],
+      marcas: ["Hikvision", "Dahua"],
+      precioReferencia: 2200,
+    },
+    {
+      id: 2,
+      nombre: "Cámara PTZ 360° Ultra",
+      categoria: "Cámaras de Seguridad",
+      caracteristicas: ["Zoom óptico", "Rotación 360°", "Seguimiento automático"],
+      marcas: ["Hikvision"],
+      precioReferencia: 5500,
+    },
+    {
+      id: 3,
+      nombre: "Kit de 4 Cámaras Hikvision HD",
+      categoria: "Cámaras de Seguridad",
+      caracteristicas: ["Monitoreo remoto", "Grabación en NVR", "Resistente a exteriores"],
+      marcas: ["Hikvision"],
+      precioReferencia: 7900,
+    },
+    {
+      id: 4,
+      nombre: "Sistema de Alarma Inalámbrica Ajax",
+      categoria: "Alarmas y Sensores",
+      caracteristicas: ["Control desde app", "Notificaciones en tiempo real", "Batería de respaldo"],
+      marcas: ["Ajax"],
+      precioReferencia: 6800,
+    },
+    {
+      id: 5,
+      nombre: "Sensor de Movimiento PIR Plus",
+      categoria: "Alarmas y Sensores",
+      caracteristicas: ["Inmunidad a mascotas", "Doble detección", "Bajo consumo de batería"],
+      marcas: ["Ajax", "Paradox"],
+      precioReferencia: 980,
+    },
+    {
+      id: 6,
+      nombre: "Lector Biométrico de Huella y Tarjeta",
+      categoria: "Control de Acceso",
+      caracteristicas: ["Registro de entrada/salida", "Integración con sistemas de seguridad", "Alta precisión"],
+      marcas: ["ZKTeco"],
+      precioReferencia: 4500,
+    },
+  ];
+  

@@ -1,0 +1,11 @@
+Detecta la intención del siguiente mensaje. Responde únicamente con una de las siguientes etiquetas:
+VENTAS, SOPORTE, CENTRAL_MONITOREO, FAQ_RAPIDA, FAQ_MENU, MENU_PRINCIPAL, SALUDO, NO_DETECTED.
+
+VENTAS: Preguntas sobre productos, precios o cotizaciones.
+SOPORTE: Preguntas sobre asistencia técnica o problemas con productos/servicios.
+CENTRAL_MONITOREO: Preguntas sobre sistemas de monitoreo y configuración de dispositivos.
+MENU_PRINCIPAL: Solicitudes de menú o información general del bot.
+FAQ_RAPIDA: Preguntas rápidas sobre la empresa.
+FAQ_MENU: Preguntas generales en el menú de FAQ.
+SALUDO: Saludos o iniciación de conversación.
+NO_DETECTED: Mensajes que no encajan en ninguna categoría.
