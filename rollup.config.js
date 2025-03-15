@@ -6,6 +6,7 @@ export default {
         file: 'dist/app.js',
         format: 'esm',
     },
+    external: ['mysql2'],
     onwarn: (warning) => {
         if (warning.code === 'UNRESOLVED_IMPORT') return
     },
