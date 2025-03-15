@@ -6,11 +6,11 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 ENV PNPM_HOME=/usr/local/bin
 
 COPY package*.json *-lock.yaml ./
-RUN pnpm install
+RUN npm install
 
 COPY . .
 
-RUN pnpm run build
+RUN npm run build
 
 FROM node:21-bullseye-slim as deploy
 
@@ -27,6 +27,6 @@ COPY --from=builder /app/*.json /app/*-lock.yaml ./
 RUN corepack enable && corepack prepare pnpm@latest --activate
 ENV PNPM_HOME=/usr/local/bin
 
-RUN pnpm install --production --ignore-scripts
+RUN npm install --production --ignore-scripts
 
 CMD ["npm", "start"]
