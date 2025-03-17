@@ -4,6 +4,7 @@ import {
   addConversationMessage,
   getLastMessages,
   getAllMessages,
+  getBotForArea,
 } from "../model/conversationRepository";
 
 export class ConversationService {
@@ -76,6 +77,16 @@ export class ConversationService {
       return messages;
     } catch (error) {
       console.error("ConversationService - getAllMessages error:", error);
+      throw error;
+    }
+  }
+
+  static async getBotForArea(idApartamento: number): Promise<number> {
+    try {
+      const idUsuario = await getBotForArea(idApartamento);
+      return idUsuario;
+    } catch (error) {
+      console.error("UserService - getBotForArea error:", error);
       throw error;
     }
   }

@@ -92,6 +92,21 @@ export async function getAllMessages(idConversacion: number): Promise<any[]> {
   }
 }
 
+export async function getBotForArea(idApartamento: number): Promise<number> {
+  try {
+    const [rows]: any = await poolPromise.query(
+      "SELECT id_usuario FROM usuarios WHERE id_rol = 1 AND id_apartamento = ? LIMIT 1",
+      [idApartamento]
+    );
+    if (rows.length === 0) {
+      throw new Error("No se encontró un bot asignado para el área especificada.");
+    }
+    return rows[0].id_usuario;
+  } catch (error) {
+    console.error("Error en getBotForArea:", error);
+    throw error;
+  }
+}
 //CONFIGURACION DE LA BASE DE DATOS MYSQL
 // import { adapterDB } from "../database/index";
 
