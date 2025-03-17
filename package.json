@@ -5,16 +5,18 @@
   "main": "dist/app.js",
   "type": "module",
   "scripts": {
-    "start": "node dist/app.js",
+    "start": "node ./dist/app.js --env-file=.env ",
     "lint": "eslint . --no-ignore",
-    "dev": "npm run lint && nodemon ./src/app.ts",
+    "dev": "npm run lint && nodemon ./src/app.ts --env-file=.env ",
     "build": "npx rollup -c"
   },
   "keywords": [],
   "dependencies": {
     "@builderbot/bot": "1.2.4",
     "@builderbot/database-mysql": "1.2.5",
+    "@builderbot/provider-baileys": "^1.2.5",
     "@builderbot/provider-meta": "1.2.4",
+    "@types/express": "^5.0.0",
     "axios": "^1.8.3",
     "body-parser": "^1.20.3",
     "compromise": "^14.14.4",

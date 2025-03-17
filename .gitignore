@@ -1,5 +1,6 @@
 node_modules
 .env
+dist
 
 *_sessions
 *tokens
@@ -7,3 +8,6 @@ node_modules
 
 *.log
 *qr.png
+
+tmp/*
+!tmp/.gitkeep

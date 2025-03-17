@@ -93,12 +93,12 @@ export async function getAllMessages(idConversacion: number): Promise<any[]> {
 }
 
 //CONFIGURACION DE LA BASE DE DATOS MYSQL
-// import { adapterDB } from "../database/db";
+// import { adapterDB } from "../database/index";
 
-// // Función para crear una nueva conversación y retornar el id insertado
+// // Función para crear una nueva conversación
 // export async function createConversation(idCliente: number): Promise<number> {
 //   try {
-//     const [result]: any = await adapterDB.db.query(
+//     const [result]: any = await adapterDB.db.promise().query(
 //       "INSERT INTO conversacion (id_cliente) VALUES (?)",
 //       [idCliente]
 //     );
@@ -112,7 +112,7 @@ export async function getAllMessages(idConversacion: number): Promise<any[]> {
 // // Función para actualizar el estado de una conversación
 // export async function updateConversationStatus(idConversacion: number, estado: string): Promise<void> {
 //   try {
-//     await adapterDB.db.query(
+//     await adapterDB.db.promise().query(
 //       "UPDATE conversacion SET estado = ?, fecha_fin = NOW() WHERE id_conversacion = ?",
 //       [estado, idConversacion]
 //     );
@@ -132,12 +132,11 @@ export async function getAllMessages(idConversacion: number): Promise<any[]> {
 //   try {
 //     let finalIdUsuario = options?.idUsuario;
 
-//     // Para mensajes del usuario, si no se proporciona idUsuario, obtener el ID del bot asignado al área.
 //     if (!finalIdUsuario) {
 //       if (!options?.idApartamento) {
 //         throw new Error("idApartamento es requerido para determinar el id del bot por defecto.");
 //       }
-//       const [rows]: any = await adapterDB.db.query(
+//       const [rows]: any = await adapterDB.db.promise().query(
 //         "SELECT id_usuario FROM usuarios WHERE id_rol = 1 AND id_apartamento = ? LIMIT 1",
 //         [options.idApartamento]
 //       );
@@ -147,7 +146,7 @@ export async function getAllMessages(idConversacion: number): Promise<any[]> {
 //       finalIdUsuario = rows[0].id_usuario;
 //     }
 
-//     await adapterDB.db.query(
+//     await adapterDB.db.promise().query(
 //       "INSERT INTO mensajes (id_conversacion, mensaje_usuario, respuesta, id_usuario, fecha_envio, fecha_respuesta) VALUES (?, ?, ?, ?, NOW(), NOW())",
 //       [idConversacion, mensajeUsuario, respuesta, finalIdUsuario]
 //     );
@@ -157,14 +156,13 @@ export async function getAllMessages(idConversacion: number): Promise<any[]> {
 //   }
 // }
 
-// // Función para obtener los últimos mensajes de una conversación (en orden cronológico)
+// // Función para obtener los últimos mensajes de una conversación
 // export async function getLastMessages(idConversacion: number, limit: number = 3): Promise<any[]> {
 //   try {
-//     const [rows]: any = await adapterDB.db.query(
+//     const [rows]: any = await adapterDB.db.promise().query(
 //       "SELECT mensaje_usuario, respuesta, fecha_envio, fecha_respuesta FROM mensajes WHERE id_conversacion = ? ORDER BY fecha_envio DESC LIMIT ?",
 //       [idConversacion, limit]
 //     );
-//     // Revertir el orden para obtenerlos de forma cronológica (del más antiguo al más reciente)
 //     return rows.reverse();
 //   } catch (error) {
 //     console.error("Error obteniendo mensajes:", error);
@@ -175,7 +173,7 @@ export async function getAllMessages(idConversacion: number): Promise<any[]> {
 // // Función para obtener TODOS los mensajes de una conversación
 // export async function getAllMessages(idConversacion: number): Promise<any[]> {
 //   try {
-//     const [rows]: any = await adapterDB.db.query(
+//     const [rows]: any = await adapterDB.db.promise().query(
 //       "SELECT mensaje_usuario, respuesta, fecha_envio, fecha_respuesta FROM mensajes WHERE id_conversacion = ? ORDER BY fecha_envio ASC",
 //       [idConversacion]
 //     );
@@ -185,3 +183,4 @@ export async function getAllMessages(idConversacion: number): Promise<any[]> {
 //     throw error;
 //   }
 // }
+
