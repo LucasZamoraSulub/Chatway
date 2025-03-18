@@ -47,7 +47,7 @@ Ten en cuenta que el tiempo de espera aproximado es de ${waitingTime} minutos. �
       promptFile: "prompt_Universal.txt",
       idApartamento: 1,
       fallbackResponse: `❌ No encontré información exacta, pero puedo ayudarte a encontrar la mejor opción. ¿Qué necesitas en términos de seguridad?`,
-      postOptions: "Si lo desea, puedo transferirlo con uno de nuestros asesores para obtener una cotización personalizada o brindarle más información sobre nuestros productos. También estoy a su disposición para responder cualquier otra consulta que tenga.\n\n✅ ¿Deseas seguir conversando o prefieres cotizar en Ventas?\n1️⃣ *Seguir conversando*\n2️⃣ *Atención personalizada*",
+      postOptions: "¿Deseas seguir conversando o ser atendido por un asesor? Puedo transferirte a un asesor para una cotización personalizada o para brindarte más información.\n\n1️⃣ *Seguir conversando*\n2️⃣ *Atención personalizada*",
       analysisPromptFile: "prompt_AnalisisConversacion_Ventas.txt",
     },
     agent: {
@@ -79,8 +79,7 @@ Ten en cuenta que el tiempo de espera aproximado es de ${waitingTime} minutos. �
       idApartamento: 3,
       fallbackResponse:
         "❌ No se encontró información exacta sobre tu problema. ¿Podrías darme más detalles?",
-        postOptions:
-        "Si lo desea, puedo transferirlo con uno de nuestros especialistas para ofrecerle una atención personalizada y resolver cualquier problema técnico de manera rápida y efectiva. Estoy aquí para asegurarme de que obtenga la asistencia que necesita.\n\n✅ ¿Deseas seguir conversando o prefieres recibir atención personalizada en Soporte?\n1️⃣ *Seguir conversando*\n2️⃣ *Atención personalizada*",
+        postOptions: "¿Deseas seguir conversando o ser atendido por un especialista? Puedo transferirte a un experto en soporte para resolver tu problema técnico de forma rápida y efectiva.\n\n1️⃣ *Seguir conversando*\n2️⃣ *Atención personalizada*",
       analysisPromptFile: "prompt_AnalisisConversacion_Soporte.txt",
     },
     agent: {
@@ -112,8 +111,7 @@ Ten en cuenta que el tiempo de espera aproximado es de ${waitingTime} minutos. �
       idApartamento: 2,
       fallbackResponse:
         "❌ No se encontró información exacta sobre tu consulta de monitoreo. ¿Podrías darme más detalles?",
-        postOptions:
-        "Si lo desea, puedo transferirlo con uno de nuestros expertos en central de monitoreo para ofrecerle una atención personalizada en la configuración o solución de inconvenientes. Estoy aquí para asegurarme de que reciba el soporte que necesita.\n\n✅ ¿Desea seguir conversando o prefiere recibir atención personalizada en Central de Monitoreo?\n1️⃣ *Seguir conversando*\n2️⃣ *Atención personalizada*",
+        postOptions: "¿Desea seguir conversando o ser atendido por un experto en Central de Monitoreo? Puedo transferirlo para asistencia personalizada en configuración o solución de inconvenientes.\n\n1️⃣ *Seguir conversando*\n2️⃣ *Atención personalizada*",
       analysisPromptFile: "prompt_AnalisisConversacion_Central.txt",
     },
     agent: {
