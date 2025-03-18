@@ -22,7 +22,7 @@ const config = {
     user: process.env.DB_USER,
     password: process.env.DB_PASS,
     database: process.env.DB_NAME,
-    port: process.env.DB_PORT,
+    dbPort: process.env.DB_PORT,
 };
 
 const provider = createProvider(MetaProvider, {
@@ -176,6 +176,11 @@ class aiServices {
         }
     }
 }
+
+var aiServices$1 = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    default: aiServices
+});
 
 const intentCache = {};
 const CACHE_EXPIRATION = 5 * 60 * 1000;
@@ -423,7 +428,7 @@ Ten en cuenta que el tiempo de espera aproximado es de ${waitingTime} minutos. �
             promptFile: "prompt_Universal.txt",
             idApartamento: 1,
             fallbackResponse: `❌ No encontré información exacta, pero puedo ayudarte a encontrar la mejor opción. ¿Qué necesitas en términos de seguridad?`,
-            postOptions: "Si lo desea, puedo transferirlo con uno de nuestros asesores para obtener una cotización personalizada o brindarle más información sobre nuestros productos. También estoy a su disposición para responder cualquier otra consulta que tenga.\n\n✅ ¿Deseas seguir conversando o prefieres cotizar en Ventas?\n1️⃣ *Seguir conversando*\n2️⃣ *Atención personalizada*",
+            postOptions: "¿Deseas seguir conversando o ser atendido por un asesor? Puedo transferirte a un asesor para una cotización personalizada o para brindarte más información.\n\n1️⃣ *Seguir conversando*\n2️⃣ *Atención personalizada*",
             analysisPromptFile: "prompt_AnalisisConversacion_Ventas.txt",
         },
         agent: {
@@ -450,7 +455,7 @@ Ten en cuenta que el tiempo de espera aproximado es de ${waitingTime} minutos. �
             promptFile: "prompt_Soporte.txt",
             idApartamento: 3,
             fallbackResponse: "❌ No se encontró información exacta sobre tu problema. ¿Podrías darme más detalles?",
-            postOptions: "Si lo desea, puedo transferirlo con uno de nuestros especialistas para ofrecerle una atención personalizada y resolver cualquier problema técnico de manera rápida y efectiva. Estoy aquí para asegurarme de que obtenga la asistencia que necesita.\n\n✅ ¿Deseas seguir conversando o prefieres recibir atención personalizada en Soporte?\n1️⃣ *Seguir conversando*\n2️⃣ *Atención personalizada*",
+            postOptions: "¿Deseas seguir conversando o ser atendido por un especialista? Puedo transferirte a un experto en soporte para resolver tu problema técnico de forma rápida y efectiva.\n\n1️⃣ *Seguir conversando*\n2️⃣ *Atención personalizada*",
             analysisPromptFile: "prompt_AnalisisConversacion_Soporte.txt",
         },
         agent: {
@@ -477,7 +482,7 @@ Ten en cuenta que el tiempo de espera aproximado es de ${waitingTime} minutos. �
             promptFile: "prompt_CentralMonitoreo.txt",
             idApartamento: 2,
             fallbackResponse: "❌ No se encontró información exacta sobre tu consulta de monitoreo. ¿Podrías darme más detalles?",
-            postOptions: "Si lo desea, puedo transferirlo con uno de nuestros expertos en central de monitoreo para ofrecerle una atención personalizada en la configuración o solución de inconvenientes. Estoy aquí para asegurarme de que reciba el soporte que necesita.\n\n✅ ¿Desea seguir conversando o prefiere recibir atención personalizada en Central de Monitoreo?\n1️⃣ *Seguir conversando*\n2️⃣ *Atención personalizada*",
+            postOptions: "¿Desea seguir conversando o ser atendido por un experto en Central de Monitoreo? Puedo transferirlo para asistencia personalizada en configuración o solución de inconvenientes.\n\n1️⃣ *Seguir conversando*\n2️⃣ *Atención personalizada*",
             analysisPromptFile: "prompt_AnalisisConversacion_Central.txt",
         },
         agent: {
@@ -546,6 +551,19 @@ async function getAllMessages(idConversacion) {
         throw error;
     }
 }
+async function getBotForArea(idApartamento) {
+    try {
+        const [rows] = await poolPromise.query("SELECT id_usuario FROM usuarios WHERE id_rol = 1 AND id_apartamento = ? LIMIT 1", [idApartamento]);
+        if (rows.length === 0) {
+            throw new Error("No se encontró un bot asignado para el área especificada.");
+        }
+        return rows[0].id_usuario;
+    }
+    catch (error) {
+        console.error("Error en getBotForArea:", error);
+        throw error;
+    }
+}
 
 class ConversationService {
     static async startConversation(idCliente) {
@@ -605,6 +623,16 @@ class ConversationService {
             throw error;
         }
     }
+    static async getBotForArea(idApartamento) {
+        try {
+            const idUsuario = await getBotForArea(idApartamento);
+            return idUsuario;
+        }
+        catch (error) {
+            console.error("UserService - getBotForArea error:", error);
+            throw error;
+        }
+    }
 }
 
 const genericAgentFlow = addKeyword(EVENTS.ACTION)
@@ -628,6 +656,78 @@ const genericAgentFlow = addKeyword(EVENTS.ACTION)
     console.log(`✅ Conversación finalizada después de atención personalizada en ${selectedFlow}.`);
     return endFlow(areaConfig.agent.endFlowMessage);
 });
+
+async function createTicketMetrics(idConversacion, resumen, nivelInteres, nivelConocimiento, productosServiciosMencionados) {
+    try {
+        const [result] = await poolPromise.query("INSERT INTO ticket_metrics (id_conversacion, resumen, nivel_interes, nivel_conocimiento, productos_servicios_mencionados) VALUES (?, ?, ?, ?, ?)", [idConversacion, resumen, nivelInteres || null, nivelConocimiento || null, productosServiciosMencionados || null]);
+        return result.insertId;
+    }
+    catch (error) {
+        console.error("Error creando métricas del ticket:", error);
+        throw error;
+    }
+}
+async function createTicketNote(contenido) {
+    try {
+        const [result] = await poolPromise.query("INSERT INTO ticket_notes (contenido) VALUES (?)", [contenido]);
+        return result.insertId;
+    }
+    catch (error) {
+        console.error("Error creando nota de ticket:", error);
+        throw error;
+    }
+}
+async function createTicket(idConversacion, idCliente, idUsuario, idApartamento, idMetricas, idNota) {
+    try {
+        const [result] = await poolPromise.query(`INSERT INTO tickets 
+       (id_conversacion, id_cliente, id_usuario, id_apartamento, id_metricas, id_nota, estado_ticket, fecha_creacion, fecha_actualizacion)
+       VALUES (?, ?, ?, ?, ?, ?, 'abierto', NOW(), NOW())`, [idConversacion, idCliente, idUsuario, idApartamento, idMetricas || null, idNota || null]);
+        return result.insertId;
+    }
+    catch (error) {
+        console.error("Error creando ticket:", error);
+        throw error;
+    }
+}
+async function updateTicketStatus(idTicket, nuevoEstado) {
+    try {
+        await poolPromise.query("UPDATE tickets SET estado_ticket = ?, fecha_actualizacion = NOW() WHERE id_ticket = ?", [nuevoEstado, idTicket]);
+    }
+    catch (error) {
+        console.error("Error actualizando estado de ticket:", error);
+        throw error;
+    }
+}
+
+class TicketService {
+    static async generateTicket(params) {
+        try {
+            let idMetricas;
+            let idNota;
+            if (params.resumenMetricas) {
+                idMetricas = await createTicketMetrics(params.idConversacion, params.resumenMetricas, params.nivelInteres, params.nivelConocimiento, params.productosServiciosMencionados);
+            }
+            if (params.notaAdicional) {
+                idNota = await createTicketNote(params.notaAdicional);
+            }
+            const ticketId = await createTicket(params.idConversacion, params.idCliente, params.idUsuario, params.idApartamento, idMetricas, idNota);
+            return ticketId;
+        }
+        catch (error) {
+            console.error("TicketService - generateTicket error:", error);
+            throw error;
+        }
+    }
+    static async changeTicketStatus(idTicket, nuevoEstado) {
+        try {
+            await updateTicketStatus(idTicket, nuevoEstado);
+        }
+        catch (error) {
+            console.error("TicketService - changeTicketStatus error:", error);
+            throw error;
+        }
+    }
+}
 
 async function analyzeConversation(ctxFn, areaConfig) {
     const conversationId = await ctxFn.state.get("conversationId");
@@ -657,7 +757,7 @@ async function analyzeConversation(ctxFn, areaConfig) {
     }
     const pathPromptAnalisis = path.join(process.cwd(), "assets/Prompts/metrics_areas", promptFile);
     const promptAnalisis = fs.readFileSync(pathPromptAnalisis, "utf8");
-    const AI = new aiServices(config.ApiKey);
+    const AI = new (await Promise.resolve().then(function () { return aiServices$1; })).default(config.ApiKey);
     const analysisResult = await AI.chat(promptAnalisis, formattedHistory);
     console.log("📊 RESULTADO DEL ANÁLISIS:", analysisResult);
     return analysisResult;
@@ -685,21 +785,100 @@ const postAreaFlow = addKeyword(EVENTS.ACTION)
         console.log(`🔄 Usuario ${ctx.from} optó por seguir conversando en el área ${selectedFlow}.`);
         return ctxFn.gotoFlow(genericAreaFlow);
     }
-    if (respuesta.includes("2") || respuesta.includes("atención") || respuesta.includes("cotizar")) {
+    if (respuesta.includes("2") ||
+        respuesta.includes("atención") ||
+        respuesta.includes("cotizar")) {
         console.log(`📊 Procesando solicitud de atención personalizada en el área ${selectedFlow}...`);
-        const resumen = await analyzeConversation(ctxFn, areaConfig);
-        console.log("📊 Resumen generado:", resumen);
-        const conversationId = await ctxFn.state.get("conversationId");
-        if (conversationId) {
-            await ConversationService.closeConversation(conversationId);
-            await ctxFn.state.update({ conversationId: null, hasSeenWelcome: false });
+        const analysisResult = await analyzeConversation(ctxFn, areaConfig);
+        console.log("📊 Resumen generado:", analysisResult);
+        let parsedAnalysis;
+        try {
+            parsedAnalysis = JSON.parse(analysisResult);
         }
+        catch (error) {
+            console.error("Error parseando el resultado del análisis:", error);
+            parsedAnalysis = {
+                nivel_conocimiento: "",
+                probabilidad_compra: "",
+                productos_mencionados: [],
+                resumen_intencion: analysisResult,
+            };
+        }
+        const resumenMetricas = parsedAnalysis.resumen_intencion;
+        const nivelInteres = parsedAnalysis.probabilidad_compra;
+        const nivelConocimiento = parsedAnalysis.nivel_conocimiento;
+        const productosServiciosMencionados = (parsedAnalysis.productos_mencionados || []).join(", ");
+        const conversationId = await ctxFn.state.get("conversationId");
+        if (!conversationId) {
+            console.error("❌ No se encontró conversationId para generar el ticket.");
+            return ctxFn.endFlow("Error al generar el ticket. Intenta de nuevo.");
+        }
+        const idCliente = await UserService.fetchUserId(ctx.from);
+        if (!idCliente) {
+            console.error(`❌ No se encontró cliente para el número ${ctx.from}.`);
+            return ctxFn.endFlow("Error al generar el ticket: cliente no registrado.");
+        }
+        const idApartamento = areaConfig.conversation.idApartamento;
+        let idUsuario;
+        try {
+            idUsuario = await ConversationService.getBotForArea(idApartamento);
+        }
+        catch (error) {
+            console.error("Error obteniendo idUsuario desde UserService:", error);
+            return ctxFn.endFlow("Error al asignar agente para el ticket.");
+        }
+        try {
+            const ticketId = await TicketService.generateTicket({
+                idConversacion: conversationId,
+                idCliente,
+                idUsuario,
+                idApartamento,
+                resumenMetricas,
+                nivelInteres,
+                nivelConocimiento,
+                productosServiciosMencionados
+            });
+            console.log(`✅ Ticket generado con ID: ${ticketId}`);
+        }
+        catch (error) {
+            console.error("Error generando ticket:", error);
+            return ctxFn.endFlow("Error al generar el ticket. Intenta de nuevo.");
+        }
+        await ConversationService.closeConversation(conversationId);
+        await ctxFn.state.update({ conversationId: null, hasSeenWelcome: false });
         return ctxFn.gotoFlow(genericAgentFlow);
     }
-    console.log(`❌ Respuesta no reconocida. Se solicita reintentar.`);
-    return ctxFn.fallBack("⚠️ Por favor, responde con *1️⃣ Seguir conversando* o *2️⃣ Atención personalizada*.");
+    console.log(`ℹ️ Respuesta directa no categorizada. Guardando mensaje y enviando a flujo genérico de área.`);
+    await ctxFn.state.update({ pendingInput: respuesta });
+    return ctxFn.gotoFlow(genericAreaFlow);
 });
 
+async function processUserInput(userInput, ctx, ctxFn) {
+    const selectedFlow = await ctxFn.state.get("selectedFlow");
+    console.log(`📥 Procesando consulta en ${selectedFlow}: ${userInput}`);
+    const conversationId = await ctxFn.state.get("conversationId");
+    const history = (await ConversationService.getContext(conversationId, 3)) || [];
+    history.push({ role: "user", content: userInput });
+    console.log("🤖 Contexto enviado a IA:", history);
+    const areaConfig = areasConfig.find((area) => area.area === selectedFlow);
+    if (!areaConfig || !areaConfig.conversation) {
+        console.error(`❌ No se encontró configuración para el área ${selectedFlow}.`);
+        return ctxFn.endFlow("Área no reconocida. Vuelve al menú principal.");
+    }
+    const promptPath = path.join(process.cwd(), "assets/Prompts/areas", areaConfig.conversation.promptFile);
+    const promptContent = fs.readFileSync(promptPath, "utf8");
+    const AI = new aiServices(config.ApiKey);
+    let response = await AI.chat(promptContent, history);
+    if (!response || response.includes("No encontré información")) {
+        response =
+            areaConfig.conversation.fallbackResponse ||
+                "❌ No se encontró información exacta. ¿Podrías darme más detalles?";
+    }
+    console.log(`🤖 Respuesta de IA para ${selectedFlow}: ${response}`);
+    await ConversationService.recordMessage(conversationId, userInput, response, { idApartamento: areaConfig.conversation.idApartamento });
+    await ctxFn.flowDynamic(response);
+    return ctxFn.gotoFlow(postAreaFlow);
+}
 const genericAreaFlow = addKeyword(EVENTS.ACTION)
     .addAction(async (ctx, ctxFn) => {
     console.log(`📌 Usuario ${ctx.from} ingresó al flujo genérico de área.`);
@@ -728,35 +907,25 @@ const genericAreaFlow = addKeyword(EVENTS.ACTION)
     if (!hasSeenWelcome) {
         await ctxFn.state.update({ hasSeenWelcome: true });
         const conversationMessage = areaConfig.conversation.conversationMessage;
-        const userName = await ctxFn.state.get("name") || "";
-        const welcomeMessage = (userName && userName !== "Desconocido") ? `¡Bienvenido ${userName}! ${conversationMessage}` : conversationMessage;
+        const userName = (await ctxFn.state.get("name")) || "";
+        const welcomeMessage = (userName && userName !== "Desconocido")
+            ? `¡Bienvenido ${userName}! ${conversationMessage}`
+            : conversationMessage;
         await ctxFn.flowDynamic(welcomeMessage);
+    }
+    const pendingInput = await ctxFn.state.get("pendingInput");
+    if (pendingInput && pendingInput.trim() !== "") {
+        await ctxFn.state.update({ pendingInput: null });
+        return processUserInput(pendingInput, ctx, ctxFn);
     }
 })
     .addAction({ capture: true }, async (ctx, ctxFn) => {
-    const userInput = ctx.body.toLowerCase().trim();
-    const selectedFlow = await ctxFn.state.get("selectedFlow");
-    console.log(`📥 Usuario ${ctx.from} consulta en ${selectedFlow}: ${userInput}`);
-    const conversationId = await ctxFn.state.get("conversationId");
-    const history = await ConversationService.getContext(conversationId, 3) || [];
-    history.push({ role: "user", content: userInput });
-    console.log("🤖 Contexto enviado a IA:", history);
-    const areaConfig = areasConfig.find((area) => area.area === selectedFlow);
-    if (!areaConfig || !areaConfig.conversation) {
-        console.error(`❌ No se encontró configuración para el área ${selectedFlow}.`);
-        return ctxFn.endFlow("Área no reconocida. Vuelve al menú principal.");
+    let userInput = ctx.body?.toLowerCase().trim();
+    if (!userInput || userInput === "") {
+        userInput = await ctxFn.state.get("pendingInput");
+        await ctxFn.state.update({ pendingInput: null });
     }
-    const promptPath = path.join(process.cwd(), "assets/Prompts/areas", areaConfig.conversation.promptFile);
-    const promptContent = fs.readFileSync(promptPath, "utf8");
-    const AI = new aiServices(config.ApiKey);
-    let response = await AI.chat(promptContent, history);
-    if (!response || response.includes("No encontré información")) {
-        response = areaConfig.conversation.fallbackResponse || "❌ No se encontró información exacta. ¿Podrías darme más detalles?";
-    }
-    console.log(`🤖 Respuesta de IA para ${selectedFlow}: ${response}`);
-    await ConversationService.recordMessage(conversationId, userInput, response, { idApartamento: areaConfig.conversation.idApartamento });
-    await ctxFn.flowDynamic(response);
-    return ctxFn.gotoFlow(postAreaFlow);
+    return processUserInput(userInput, ctx, ctxFn);
 });
 
 const intermediaryFlow = addKeyword(EVENTS.ACTION).addAction(async (ctx, ctxFn) => {
