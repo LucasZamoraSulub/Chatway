@@ -12,7 +12,7 @@ COPY . .
 
 RUN pnpm run build
 
-FROM node:21-bullseye-slim as deploy
+FROM node:20-bullseye-slim as deploy
 
 WORKDIR /app
 
