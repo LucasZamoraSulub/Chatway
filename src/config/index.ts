@@ -20,4 +20,6 @@ export const config = {
     password: process.env.DB_PASS,
     database: process.env.DB_NAME,
     dbPort: process.env.DB_PORT,
+    //CRM
+    crmApiUrl: process.env.CRM_API_URL,
 };

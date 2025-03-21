@@ -140,7 +140,9 @@ export const postAreaFlow = addKeyword(EVENTS.ACTION)
       const resumenMetricas = parsedAnalysis.resumen_intencion;
       const nivelInteres = parsedAnalysis.probabilidad_compra;
       const nivelConocimiento = parsedAnalysis.nivel_conocimiento;
-      const productosServiciosMencionados = (parsedAnalysis.productos_mencionados || []).join(", ");
+      const productosServiciosMencionados = (
+        parsedAnalysis.productos_mencionados || []
+      ).join(", ");
 
       // Recopilar datos para la generación del ticket
       const conversationId = await ctxFn.state.get("conversationId");
@@ -170,9 +172,10 @@ export const postAreaFlow = addKeyword(EVENTS.ACTION)
         return ctxFn.endFlow("Error al asignar agente para el ticket.");
       }
 
+      let ticketId: number;
       // Generar el ticket
       try {
-        const ticketId = await TicketService.generateTicket({
+         ticketId = await TicketService.generateTicket({
           idConversacion: conversationId,
           idCliente,
           idUsuario,
@@ -180,9 +183,11 @@ export const postAreaFlow = addKeyword(EVENTS.ACTION)
           resumenMetricas,
           nivelInteres,
           nivelConocimiento,
-          productosServiciosMencionados
+          productosServiciosMencionados,
         });
         console.log(`✅ Ticket generado con ID: ${ticketId}`);
+        // Almacenar el ticket en el estado para usarlo más adelante
+        await ctxFn.state.update({ ticketId });
       } catch (error) {
         console.error("Error generando ticket:", error);
         return ctxFn.endFlow("Error al generar el ticket. Intenta de nuevo.");
@@ -196,9 +201,10 @@ export const postAreaFlow = addKeyword(EVENTS.ACTION)
       return ctxFn.gotoFlow(genericAgentFlow);
     }
 
-    console.log(`ℹ️ Respuesta directa no categorizada. Guardando mensaje y enviando a flujo genérico de área.`);
+    console.log(
+      `ℹ️ Respuesta directa no categorizada. Guardando mensaje y enviando a flujo genérico de área.`
+    );
     await ctxFn.state.update({ pendingInput: respuesta });
-    
+
     return ctxFn.gotoFlow(genericAreaFlow);
-    
   });
