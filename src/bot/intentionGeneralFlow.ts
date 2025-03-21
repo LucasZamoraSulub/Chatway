@@ -2,19 +2,15 @@ import { addKeyword, EVENTS } from "@builderbot/bot";
 import { detectIntent } from "~/services/intentionDetector";
 import { detectKeywordIntents } from "~/services/keywordIntentDetector";
 import { intentsConfig } from "~/config/intents.config";
-import { greetingFlow } from "./greetingFlow";
-import { mainMenuFlow } from "./mainMenuFlow";
-import { selectServiceModeFlow } from "./selectServiceModeFlow";
-import { faqFlow } from "./faqFlow";
-import { faqMenuFlow } from "./faqMenuFlow";
 
-// Mapa para relacionar nombres de flujo con su referencia
-const flowMap: Record<string, any> = {
-  selectServiceModeFlow,
-  faqFlow,
-  faqMenuFlow,
-  mainMenuFlow,
-  greetingFlow,
+// Definir el mapa de flujos usando importaciones dinámicas
+const flowMap: Record<string, () => Promise<any>> = {
+  selectServiceModeFlow: async () =>
+    (await import("./selectServiceModeFlow.js")).selectServiceModeFlow,
+  faqFlow: async () => (await import("./faqFlow.js")).faqFlow,
+  faqMenuFlow: async () => (await import("./faqMenuFlow.js")).faqMenuFlow,
+  mainMenuFlow: async () => (await import("./mainMenuFlow.js")).mainMenuFlow,
+  greetingFlow: async () => (await import("./greetingFlow.js")).greetingFlow,
 };
 
 export const intentionGeneralFlow = addKeyword(EVENTS.ACTION).addAction(
@@ -45,8 +41,8 @@ export const intentionGeneralFlow = addKeyword(EVENTS.ACTION).addAction(
     }
 
     // Actualizar el estado con la intención detectada y limpiar el mensaje inicial
-    await ctxFn.state.update({ intention: intent });
-    await ctxFn.state.update({ initialMessage: null });
+    // await ctxFn.state.update({ intention: intent });
+    // await ctxFn.state.update({ initialMessage: null });
 
     // Buscar en la configuración la intención detectada
     const intentConfig = intentsConfig.find((i) => i.name === intent);
@@ -57,7 +53,19 @@ export const intentionGeneralFlow = addKeyword(EVENTS.ACTION).addAction(
       console.log(
         `Redirigiendo usuario ${ctx.from} al flujo: ${intentConfig.flowName}`
       );
-      return ctxFn.gotoFlow(flowMap[intentConfig.flowName]);
+      // Validar que se haya definido un flujo en la intención
+      if (!intentConfig.flowName || !flowMap[intentConfig.flowName]) {
+        console.error(
+          `No se encontró un flujo válido para la intención ${intentConfig.name}`
+        );
+        return ctxFn.endFlow(
+          "No entendí tu mensaje. Por favor, intenta de nuevo."
+        );
+      }
+
+      // Cargar dinámicamente el flujo correspondiente
+      const targetFlow = await flowMap[intentConfig.flowName]();
+      return ctxFn.gotoFlow(targetFlow);
     }
 
     console.log(`❌ Intención no reconocida para usuario ${ctx.from}.`);

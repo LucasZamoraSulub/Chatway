@@ -20,7 +20,7 @@ const mainFlow = addKeyword(EVENTS.WELCOME).addAction(async (ctx, ctxFn) => {
 
   console.log(`✅ Usuario ${ctx.from} ya registrado. Redirigiendo a intentionGeneralFlow.`);
   // Almacenar el mensaje inicial en el estado para que no se pierda
-  await ctxFn.state.update({ initialMessage: ctx.body });
+  // await ctxFn.state.update({ initialMessage: ctx.body });
   return ctxFn.gotoFlow(intentionGeneralFlow);
 });
 

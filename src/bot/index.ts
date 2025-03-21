@@ -19,7 +19,7 @@ import { postAreaFlow } from "./postAreaFlow";
 import { postFAQFlow } from "./postFAQFlow";
 import { postFAQAreaFlow } from "./postFAQAreaFlow";
 
-export default createFlow([
+export const flow = createFlow([
     mainFlow,
     registerFlow,
     intentionGeneralFlow,

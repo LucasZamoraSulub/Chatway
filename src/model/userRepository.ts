@@ -76,12 +76,12 @@ export async function getUserId(telefono: string): Promise<number | null> {
 
 
 //CONFIGURACION DE LA BASE DE DATOS MYSQL
-// import { adapterDB } from "../database/index";
+// import { database } from "../database/index";
 
 // // Verifica si existe un usuario por su teléfono
 // export async function userExists(telefono: string): Promise<boolean> {
 //   try {
-//     const [rows]: any = await adapterDB.db.promise().query(
+//     const [rows]: any = await database.db.promise().query(
 //       "SELECT telefono FROM clientes_potenciales WHERE telefono = ?",
 //       [telefono]
 //     );
@@ -95,7 +95,7 @@ export async function getUserId(telefono: string): Promise<number | null> {
 // // Crea un nuevo usuario en clientes_potenciales
 // export async function createUser(telefono: string, nombre: string, email: string): Promise<void> {
 //   try {
-//     await adapterDB.db.promise().query(
+//     await database.db.promise().query(
 //       "INSERT INTO clientes_potenciales (telefono, nombre, email) VALUES (?, ?, ?)",
 //       [telefono, nombre, email]
 //     );
@@ -108,7 +108,7 @@ export async function getUserId(telefono: string): Promise<number | null> {
 // // Actualiza la información de un usuario existente
 // export async function updateUserInfo(telefono: string, nombre: string, email: string): Promise<void> {
 //   try {
-//     await adapterDB.db.promise().query(
+//     await database.db.promise().query(
 //       "UPDATE clientes_potenciales SET nombre = ?, email = ?, updated_at = NOW() WHERE telefono = ?",
 //       [nombre, email, telefono]
 //     );
@@ -121,7 +121,7 @@ export async function getUserId(telefono: string): Promise<number | null> {
 // // Obtiene los datos del usuario por su teléfono
 // export async function getUserData(telefono: string): Promise<{ nombre: string; email: string } | null> {
 //   try {
-//     const [rows]: any = await adapterDB.db.promise().query(
+//     const [rows]: any = await database.db.promise().query(
 //       "SELECT nombre, email FROM clientes_potenciales WHERE telefono = ?",
 //       [telefono]
 //     );
@@ -138,7 +138,7 @@ export async function getUserId(telefono: string): Promise<number | null> {
 // // Obtiene el ID del usuario por su teléfono
 // export async function getUserId(telefono: string): Promise<number | null> {
 //   try {
-//     const [rows]: any = await adapterDB.db.promise().query(
+//     const [rows]: any = await database.db.promise().query(
 //       "SELECT id_cliente FROM clientes_potenciales WHERE telefono = ?",
 //       [telefono]
 //     );

@@ -1,28 +1,52 @@
 import { createBot } from "@builderbot/bot";
 import { MemoryDB as Database } from "@builderbot/bot";
-import { provider } from "./provider";
+import { flow } from "./bot/index";
+import { poolPromise  } from "./database/db"; 
+import { provider } from "./provider/index";
+// import { aiServices } from "./services/aiServices";
 import { config } from "./config";
-import bot from "./bot";
+
+// Función para verificar si un mensaje ya fue procesado
+async function isMessageProcessed(ref: string, phone: string): Promise<boolean> {
+  try {
+    const [rows]: any = await poolPromise.query(
+      "SELECT id FROM history WHERE ref = ? AND phone = ? LIMIT 1",
+      [ref, phone]
+    );
+    return rows.length > 0;
+  } catch (error) {
+    console.error("Error verificando el historial:", error);
+    // En caso de error, procesamos el mensaje para no bloquear la operación
+    return false;
+  }
+}
 
 const PORT = config.PORT ?? 3008;
 
 const main = async () => {
-  const adapterFlow = bot;
-  const adapterProvider = provider;
-  const adapterDatabase = new Database();
-
   const { handleCtx, httpServer } = await createBot({
-    flow: adapterFlow,
-    provider: adapterProvider,
-    database: adapterDatabase,
+    flow: flow,
+    provider: provider,
+    database: new Database(),
+    // database: adapterDatabase,
   });
 
-  adapterProvider.server.post(
+  provider.server.post(
     '/v1/messages',
     handleCtx(async (bot, req, res) => {
       try {
-        const { number, message, urlMedia } = req.body;
-        // Se recomienda formatear el número de manera internacional (ejemplo para México: "5219981345236")
+        // Se espera que el request incluya un identificador único "ref"
+        const { number, message, urlMedia, ref } = req.body;
+        if (!ref) {
+          console.error("Falta el campo 'ref' en el payload.");
+          res.statusCode = 400;
+          return res.end("Campo 'ref' es requerido.");
+        }
+        // Verificar si el mensaje ya fue procesado
+        if (await isMessageProcessed(ref, number)) {
+          console.log(`Mensaje con ref ${ref} para ${number} ya fue procesado, se ignora.`);
+          return res.end('Mensaje duplicado, ignorado');
+        }
         console.log(`Enviando mensaje a: ${number}`);
         await bot.sendMessage(number, message, { media: urlMedia || null });
         return res.end('sended');
@@ -32,10 +56,9 @@ const main = async () => {
         return res.end('error');
       }
     })
-  );
-  
+  );  
 
-  adapterProvider.server.post(
+  provider.server.post(
     "/v1/register",
     handleCtx(async (bot, req, res) => {
       const { number, name } = req.body;
@@ -44,7 +67,7 @@ const main = async () => {
     })
   );
 
-  adapterProvider.server.post(
+  provider.server.post(
     "/v1/samples",
     handleCtx(async (bot, req, res) => {
       const { number, name } = req.body;
@@ -53,7 +76,7 @@ const main = async () => {
     })
   );
 
-  adapterProvider.server.post(
+  provider.server.post(
     "/v1/blacklist",
     handleCtx(async (bot, req, res) => {
       const { number, intent } = req.body;
@@ -66,7 +89,7 @@ const main = async () => {
   );
 
   // Endpoint de prueba: GET /v1/test
-  adapterProvider.server.get(
+  provider.server.get(
     "/v1/test",
     handleCtx(async (bot, req, res) => {
       return res.end("Test endpoint funcionando correctamente");

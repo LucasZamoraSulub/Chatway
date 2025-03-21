@@ -107,16 +107,18 @@ export async function getBotForArea(idApartamento: number): Promise<number> {
     throw error;
   }
 }
+
 //CONFIGURACION DE LA BASE DE DATOS MYSQL
-// import { adapterDB } from "../database/index";
+// import { database } from "../database/index";
 
 // // Función para crear una nueva conversación
 // export async function createConversation(idCliente: number): Promise<number> {
 //   try {
-//     const [result]: any = await adapterDB.db.promise().query(
+//     const [result]: any = await database.db.promise().query(
 //       "INSERT INTO conversacion (id_cliente) VALUES (?)",
 //       [idCliente]
 //     );
+//     // result.insertId contiene el ID de la conversación recién creada
 //     return result.insertId;
 //   } catch (error) {
 //     console.error("Error creando conversación:", error);
@@ -127,7 +129,7 @@ export async function getBotForArea(idApartamento: number): Promise<number> {
 // // Función para actualizar el estado de una conversación
 // export async function updateConversationStatus(idConversacion: number, estado: string): Promise<void> {
 //   try {
-//     await adapterDB.db.promise().query(
+//     await database.db.promise().query(
 //       "UPDATE conversacion SET estado = ?, fecha_fin = NOW() WHERE id_conversacion = ?",
 //       [estado, idConversacion]
 //     );
@@ -147,11 +149,12 @@ export async function getBotForArea(idApartamento: number): Promise<number> {
 //   try {
 //     let finalIdUsuario = options?.idUsuario;
 
+//     // Si no se proporciona idUsuario, se obtiene el bot asignado al área (id_apartamento) con id_rol = 1
 //     if (!finalIdUsuario) {
 //       if (!options?.idApartamento) {
 //         throw new Error("idApartamento es requerido para determinar el id del bot por defecto.");
 //       }
-//       const [rows]: any = await adapterDB.db.promise().query(
+//       const [rows]: any = await database.db.promise().query(
 //         "SELECT id_usuario FROM usuarios WHERE id_rol = 1 AND id_apartamento = ? LIMIT 1",
 //         [options.idApartamento]
 //       );
@@ -161,7 +164,7 @@ export async function getBotForArea(idApartamento: number): Promise<number> {
 //       finalIdUsuario = rows[0].id_usuario;
 //     }
 
-//     await adapterDB.db.promise().query(
+//     await database.db.promise().query(
 //       "INSERT INTO mensajes (id_conversacion, mensaje_usuario, respuesta, id_usuario, fecha_envio, fecha_respuesta) VALUES (?, ?, ?, ?, NOW(), NOW())",
 //       [idConversacion, mensajeUsuario, respuesta, finalIdUsuario]
 //     );
@@ -174,10 +177,11 @@ export async function getBotForArea(idApartamento: number): Promise<number> {
 // // Función para obtener los últimos mensajes de una conversación
 // export async function getLastMessages(idConversacion: number, limit: number = 3): Promise<any[]> {
 //   try {
-//     const [rows]: any = await adapterDB.db.promise().query(
+//     const [rows]: any = await database.db.promise().query(
 //       "SELECT mensaje_usuario, respuesta, fecha_envio, fecha_respuesta FROM mensajes WHERE id_conversacion = ? ORDER BY fecha_envio DESC LIMIT ?",
 //       [idConversacion, limit]
 //     );
+//     // Revertir el orden para obtenerlos en secuencia cronológica (del más antiguo al más reciente)
 //     return rows.reverse();
 //   } catch (error) {
 //     console.error("Error obteniendo mensajes:", error);
@@ -188,7 +192,7 @@ export async function getBotForArea(idApartamento: number): Promise<number> {
 // // Función para obtener TODOS los mensajes de una conversación
 // export async function getAllMessages(idConversacion: number): Promise<any[]> {
 //   try {
-//     const [rows]: any = await adapterDB.db.promise().query(
+//     const [rows]: any = await database.db.promise().query(
 //       "SELECT mensaje_usuario, respuesta, fecha_envio, fecha_respuesta FROM mensajes WHERE id_conversacion = ? ORDER BY fecha_envio ASC",
 //       [idConversacion]
 //     );
@@ -199,3 +203,18 @@ export async function getBotForArea(idApartamento: number): Promise<number> {
 //   }
 // }
 
+// export async function getBotForArea(idApartamento: number): Promise<number> {
+//   try {
+//     const [rows]: any = await database.db.promise().query(
+//       "SELECT id_usuario FROM usuarios WHERE id_rol = 1 AND id_apartamento = ? LIMIT 1",
+//       [idApartamento]
+//     );
+//     if (rows.length === 0) {
+//       throw new Error("No se encontró un bot asignado para el área especificada.");
+//     }
+//     return rows[0].id_usuario;
+//   } catch (error) {
+//     console.error("Error en getBotForArea:", error);
+//     throw error;
+//   }
+// }

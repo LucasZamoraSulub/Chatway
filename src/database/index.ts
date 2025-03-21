@@ -2,7 +2,7 @@
 // import { MysqlAdapter  } from '@builderbot/database-mysql'
 // import { config } from "../config";
 
-// export const adapterDB = new MysqlAdapter({
+// export const database = new MysqlAdapter({
 //   host: config.server,
 //   user: config.user,
 //   password: config.password,
