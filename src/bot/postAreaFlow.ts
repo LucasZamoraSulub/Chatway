@@ -8,6 +8,7 @@ import { genericAreaFlow } from "./areas/genericAreaFlow";
 import { genericAgentFlow } from "./liveAgents/genericAgentFlow";
 import { TicketService } from "~/controllers/ticketController";
 import { UserService } from "~/controllers/userController";
+import { ConversationManager } from "~/services/conversationManager";
 
 // Función para analizar la conversación utilizando el prompt de análisis específico
 async function analyzeConversation(
@@ -78,6 +79,21 @@ export const postAreaFlow = addKeyword(EVENTS.ACTION)
       return ctxFn.endFlow("Área no reconocida. Vuelve al menú principal.");
     }
     await ctxFn.flowDynamic(areaConfig.conversation.postOptions);
+
+    // Registrar el mensaje del bot en la BD
+    const conversationId = await ctxFn.state.get("conversationId");
+    if (conversationId) {
+      await ConversationManager.logInteraction(
+        ctx,
+        ctxFn.state,
+        "assistant",
+        areaConfig.conversation.postOptions
+      );
+    } else {
+      console.error(
+        "No se encontró conversationId para registrar el mensaje del bot en postAreaFlow."
+      );
+    }
   })
   // Segunda acción: Capturar respuesta y redirigir
   .addAction({ capture: true }, async (ctx, ctxFn) => {
@@ -95,11 +111,17 @@ export const postAreaFlow = addKeyword(EVENTS.ACTION)
       return ctxFn.endFlow("Área no reconocida. Vuelve al menú principal.");
     }
 
+    // Obtener conversationId (pero NO registrar de inmediato)
+    const conversationId = await ctxFn.state.get("conversationId");
+
     // Opción 1: Seguir conversando
     if (respuesta.includes("1") || respuesta.includes("seguir")) {
       console.log(
         `🔄 Usuario ${ctx.from} optó por seguir conversando en el área ${selectedFlow}.`
       );
+      if (conversationId) {
+        await ConversationManager.logInteraction(ctx, ctxFn.state, "user", respuesta);
+      }
       return ctxFn.gotoFlow(genericAreaFlow);
     }
 
@@ -112,6 +134,10 @@ export const postAreaFlow = addKeyword(EVENTS.ACTION)
       console.log(
         `📊 Procesando solicitud de atención personalizada en el área ${selectedFlow}...`
       );
+
+      if (conversationId) {
+        await ConversationManager.logInteraction(ctx, ctxFn.state, "user", respuesta);
+      }
 
       const analysisResult = await analyzeConversation(ctxFn, areaConfig);
       console.log("📊 Resumen generado:", analysisResult);
@@ -145,13 +171,13 @@ export const postAreaFlow = addKeyword(EVENTS.ACTION)
       ).join(", ");
 
       // Recopilar datos para la generación del ticket
-      const conversationId = await ctxFn.state.get("conversationId");
-      if (!conversationId) {
-        console.error(
-          "❌ No se encontró conversationId para generar el ticket."
-        );
-        return ctxFn.endFlow("Error al generar el ticket. Intenta de nuevo.");
-      }
+      // const conversationId = await ctxFn.state.get("conversationId");
+      // if (!conversationId) {
+      //   console.error(
+      //     "❌ No se encontró conversationId para generar el ticket."
+      //   );
+      //   return ctxFn.endFlow("Error al generar el ticket. Intenta de nuevo.");
+      // }
 
       const idCliente = await UserService.fetchUserId(ctx.from);
       if (!idCliente) {
@@ -175,7 +201,7 @@ export const postAreaFlow = addKeyword(EVENTS.ACTION)
       let ticketId: number;
       // Generar el ticket
       try {
-         ticketId = await TicketService.generateTicket({
+        ticketId = await TicketService.generateTicket({
           idConversacion: conversationId,
           idCliente,
           idUsuario,
@@ -195,7 +221,10 @@ export const postAreaFlow = addKeyword(EVENTS.ACTION)
 
       // Finalizar la conversación y limpiar el estado
       await ConversationService.closeConversation(conversationId);
-      await ctxFn.state.update({ conversationId: null, hasSeenWelcome: false });
+      await ctxFn.state.update({
+        hasSeenWelcome: false,
+        conversationHistory: null,
+      });
 
       // Redirigir al flujo de atención personalizada
       return ctxFn.gotoFlow(genericAgentFlow);

@@ -3,6 +3,7 @@ import { selectServiceModeFlow } from "./selectServiceModeFlow";
 import { faqMenuFlow } from "./faqMenuFlow";
 import { areasConfig } from "~/config/areas.config";
 import { intentionGeneralFlow } from "./intentionGeneralFlow";
+import { ConversationManager } from "~/services/conversationManager";
 
 const generateMenuMessage = (): string => {
   // Ordena las áreas según el campo 'order' definido en la subpropiedad menu
@@ -27,16 +28,37 @@ const generateMenuMessage = (): string => {
 };
 
 const mainMenuFlow = addKeyword(EVENTS.ACTION)
-  .addAnswer(generateMenuMessage(), { capture: true }, async (ctx, { state, gotoFlow, fallBack }) => {
+  // Primer paso: enviar el mensaje del menú y registrar el mensaje del bot
+  .addAction(async (ctx, ctxFn) => {
+    const menuMessage = generateMenuMessage();
+    // Enviar el mensaje del menú
+    await ctxFn.flowDynamic(menuMessage);
+    // Registrar el mensaje del bot
+    const conversationId = await ctxFn.state.get("conversationId");
+    if (conversationId) {
+      await ConversationManager.logInteraction(ctx, ctxFn.state, "assistant", menuMessage);
+    } else {
+      console.error("No se encontró conversationId para registrar el mensaje del bot.");
+    }
+  })
+  // Segundo paso: capturar y registrar la respuesta del usuario, actualizar estado y redirigir
+  .addAction({ capture: true }, async (ctx, { state, gotoFlow, fallBack }) => {
     const userSelection = ctx.body.trim().toLowerCase();
     console.log(`📌 Usuario ${ctx.from} seleccionó: ${ctx.body}`);
 
-    // Ordenar las áreas según el campo 'order'
+    // Registrar la respuesta del usuario
+    const conversationId = await state.get("conversationId");
+    if (conversationId) {
+      await ConversationManager.logInteraction(ctx, state, "user", ctx.body);
+    }
+
+    // Actualizar el estado de la conversación a 2 (por ejemplo, "Navegando")
+    await ConversationManager.updateState(ctx, state, 2);
+
+    // Construir el mapa de áreas a partir de la configuración
     const sortedAreas = [...areasConfig].sort(
       (a, b) => (a.menu?.order || 0) - (b.menu?.order || 0)
     );
-
-    // Construir un mapa que relacione tanto números como palabras clave (en minúsculas) con el área
     const areaMap: Record<string, string> = {};
     sortedAreas.forEach((area, index) => {
       if (area.menu) {
@@ -45,22 +67,18 @@ const mainMenuFlow = addKeyword(EVENTS.ACTION)
         areaMap[area.area.toLowerCase()] = area.area;
       }
     });
-
     // Agregar la opción de FAQ
     const faqKey = (sortedAreas.length + 1).toString();
     areaMap[faqKey] = "FAQ";
     areaMap["preguntas frecuentes"] = "FAQ";
     areaMap["faq"] = "FAQ";
 
-    // Determinar la opción seleccionada
     const selectedOption = areaMap[userSelection];
-
     if (!selectedOption) {
       console.log(`⚠️ No se encontró opción válida para ${ctx.from}.`);
       return gotoFlow(intentionGeneralFlow);
     }
 
-    // Redirigir según la selección
     if (selectedOption === "FAQ") {
       console.log(`🔸 Redirigiendo a faqMenuFlow.`);
       return gotoFlow(faqMenuFlow);

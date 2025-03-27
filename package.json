@@ -31,7 +31,8 @@
     "mssql": "^11.0.1",
     "openai": "^4.80.1",
     "uuid": "^11.0.5",
-    "wink-sentiment": "^5.0.2"
+    "wink-sentiment": "^5.0.2",
+    "winston": "^3.17.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.30",

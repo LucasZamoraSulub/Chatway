@@ -7,10 +7,10 @@ import {
 } from "../model/userRepository";
 
 export class UserService {
-  // Verifica si un usuario existe a través de su teléfono
-  public static async existsUser(telefono: string): Promise<boolean> {
+  // Verifica si un usuario existe a través de su celular
+  public static async existsUser(celular: string): Promise<boolean> {
     try {
-      return await userExists(telefono);
+      return await userExists(celular);
     } catch (error) {
       console.error("UserService - existsUser error:", error);
       throw error;
@@ -19,17 +19,17 @@ export class UserService {
 
   // Registra un usuario; si ya existe, actualiza su información
   public static async registerUser(
-    telefono: string,
+    celular: string,
     nombre: string,
     email: string
   ): Promise<void> {
     try {
-      const exists = await userExists(telefono);
+      const exists = await userExists(celular);
       if (!exists) {
-        await createUser(telefono, nombre, email);
+        await createUser(celular, nombre, email);
       } else {
         // Actualiza la información en caso de que ya exista
-        await updateUserInfo(telefono, nombre, email);
+        await updateUserInfo(celular, nombre, email);
       }
     } catch (error) {
       console.error("UserService - registerUser error:", error);
@@ -39,19 +39,20 @@ export class UserService {
 
   // Recupera los datos del usuario (nombre y email)
   public static async fetchUserData(
-    telefono: string
+    celular: string
   ): Promise<{ nombre: string; email: string } | null> {
     try {
-      return await getUserData(telefono);
+      return await getUserData(celular);
     } catch (error) {
       console.error("UserService - fetchUserData error:", error);
       throw error;
     }
   }
 
-  public static async fetchUserId(telefono: string): Promise<number | null> {
+  // Obtiene el ID del usuario a partir de su celular
+  public static async fetchUserId(celular: string): Promise<number | null> {
     try {
-      return await getUserId(telefono);
+      return await getUserId(celular);
     } catch (error) {
       console.error("UserService - fetchUserId error:", error);
       throw error;

@@ -2,6 +2,7 @@ import { addKeyword, EVENTS } from "@builderbot/bot";
 import { detectIntent } from "~/services/intentionDetector";
 import { detectKeywordIntents } from "~/services/keywordIntentDetector";
 import { intentsConfig } from "~/config/intents.config";
+import { ConversationManager } from "~/services/conversationManager";
 
 // Definir el mapa de flujos usando importaciones dinámicas
 const flowMap: Record<string, () => Promise<any>> = {
@@ -15,12 +16,27 @@ const flowMap: Record<string, () => Promise<any>> = {
 
 export const intentionGeneralFlow = addKeyword(EVENTS.ACTION).addAction(
   async (ctx, ctxFn) => {
+    // // Aseguramos que exista la conversación (si no existe, se crea)
+    // const conversationId = await ConversationManager.ensureConversation(
+    //   ctx,
+    //   ctxFn.state
+    // );
+
+    // Obtenemos el mensaje inicial: si hay un valor en "initialMessage" en el estado, lo usamos; de lo contrario, el cuerpo de la request
     let userMessage: string | undefined = await ctxFn.state.get(
       "initialMessage"
     );
     if (!userMessage) {
       userMessage = ctx.body;
     }
+
+    // // Registrar el mensaje inicial del usuario en la conversación
+    // await ConversationManager.logInteraction(
+    //   ctx,
+    //   ctxFn.state,
+    //   "user",
+    //   userMessage
+    // );
 
     // Primero, intentar detectar la intención mediante palabras clave (retornando un arreglo)
     const detectedKeywords = detectKeywordIntents(userMessage);
@@ -58,9 +74,15 @@ export const intentionGeneralFlow = addKeyword(EVENTS.ACTION).addAction(
         console.error(
           `No se encontró un flujo válido para la intención ${intentConfig.name}`
         );
-        return ctxFn.endFlow(
-          "No entendí tu mensaje. Por favor, intenta de nuevo."
+        const botResponse =
+          "No entendí tu mensaje. Por favor, intenta de nuevo.";
+        await ConversationManager.logInteraction(
+          ctx,
+          ctxFn.state,
+          "assistant",
+          botResponse
         );
+        return ctxFn.endFlow(botResponse);
       }
 
       // Cargar dinámicamente el flujo correspondiente
@@ -69,6 +91,8 @@ export const intentionGeneralFlow = addKeyword(EVENTS.ACTION).addAction(
     }
 
     console.log(`❌ Intención no reconocida para usuario ${ctx.from}.`);
-    return ctxFn.endFlow("No entendí tu mensaje. Por favor, intenta de nuevo.");
+    const botResponse = "No entendí tu mensaje. Por favor, intenta de nuevo.";
+    await ConversationManager.logInteraction(ctx, ctxFn.state, "assistant", botResponse);
+    return ctxFn.endFlow(botResponse);
   }
 );

@@ -5,6 +5,9 @@ import {
   getLastMessages,
   getAllMessages,
   getBotForArea,
+  insertInteraction,
+  updateConversationState,
+  updateConversationResult,
 } from "../model/conversationRepository";
 
 export class ConversationService {
@@ -40,19 +43,25 @@ export class ConversationService {
   }
 
   // Recupera el contexto de la conversación (últimos mensajes) para mantener la continuidad del chat
-  static async getContext(conversationId: number, limit: number = 3): Promise<any[]> {
+  static async getContext(
+    conversationId: number,
+    limit: number = 3
+  ): Promise<{ role: string; content: string }[]> {
     try {
       const contextRows = await getLastMessages(conversationId, limit);
       // Transformar cada fila en entradas con { role, content }
-      const formattedContext = contextRows.reduce((acc: { role: string; content: string }[], row: any) => {
-        if (row.mensaje_usuario) {
-          acc.push({ role: "user", content: row.mensaje_usuario });
-        }
-        if (row.respuesta) {
-          acc.push({ role: "assistant", content: row.respuesta });
-        }
-        return acc;
-      }, []);
+      const formattedContext = contextRows.reduce(
+        (acc: { role: string; content: string }[], row: any) => {
+          if (row.mensaje_usuario) {
+            acc.push({ role: "user", content: row.mensaje_usuario });
+          }
+          if (row.respuesta) {
+            acc.push({ role: "assistant", content: row.respuesta });
+          }
+          return acc;
+        },
+        []
+      );
       return formattedContext;
     } catch (error) {
       console.error("ConversationService - getContext error:", error);
@@ -60,7 +69,7 @@ export class ConversationService {
     }
   }
 
-  // Finaliza la conversación actual actualizando su estado a 'finalizada
+  // Finaliza la conversación actual actualizando su estado a 'finalizada'
   static async closeConversation(conversationId: number): Promise<void> {
     try {
       await updateConversationStatus(conversationId, "finalizada");
@@ -81,12 +90,58 @@ export class ConversationService {
     }
   }
 
+  // Obtiene el bot asignado a un área
   static async getBotForArea(idApartamento: number): Promise<number> {
     try {
       const idUsuario = await getBotForArea(idApartamento);
       return idUsuario;
     } catch (error) {
-      console.error("UserService - getBotForArea error:", error);
+      console.error("ConversationService - getBotForArea error:", error);
+      throw error;
+    }
+  }
+
+  // Registra una interacción (mensaje del usuario o respuesta del bot) en la conversación
+  static async recordInteraction(
+    conversationId: number,
+    role: "user" | "assistant",
+    content: string,
+    idUsuario?: number
+  ): Promise<void> {
+    try {
+      await insertInteraction(conversationId, role, content, idUsuario);
+    } catch (error) {
+      console.error("ConversationService - recordInteraction error:", error);
+      throw error;
+    }
+  }
+
+  // Actualiza el estado_conversacion de la conversación
+  static async updateState(
+    idConversacion: number,
+    estado: number
+  ): Promise<void> {
+    try {
+      await updateConversationState(idConversacion, estado);
+      console.log(
+        `Estado de conversación (estado_conversacion) actualizado a: ${estado}`
+      );
+    } catch (error) {
+      console.error("ConversationService - updateState error:", error);
+      throw error;
+    }
+  }
+
+  // Actualiza el resultado_conversacion de la conversación
+  static async updateResult(
+    idConversacion: number,
+    resultado: number
+  ): Promise<void> {
+    try {
+      await updateConversationResult(idConversacion, resultado);
+      console.log(`Resultado de conversación actualizado a: ${resultado}`);
+    } catch (error) {
+      console.error("ConversationService - updateResult error:", error);
       throw error;
     }
   }

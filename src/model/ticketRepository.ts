@@ -34,21 +34,22 @@ export async function createTicketNote(contenido: string): Promise<number> {
   }
 }
 
-// Función para crear un nuevo ticket
+// Función para crear un nuevo ticket, ahora incluyendo el estado de seguimiento (estado_seguimiento_ticket)
 export async function createTicket(
   idConversacion: number,
   idCliente: number,
   idUsuario: number,
   idApartamento: number,
+  estadoSeguimientoTicket: number,
   idMetricas?: number,
   idNota?: number
 ): Promise<number> {
   try {
     const [result]: any = await poolPromise.query(
       `INSERT INTO tickets 
-       (id_conversacion, id_cliente, id_usuario, id_apartamento, id_metricas, id_nota, estado_ticket, fecha_creacion, fecha_actualizacion)
-       VALUES (?, ?, ?, ?, ?, ?, 'abierto', NOW(), NOW())`,
-      [idConversacion, idCliente, idUsuario, idApartamento, idMetricas || null, idNota || null]
+       (id_conversacion, id_cliente, id_usuario, id_apartamento, estado_ticket, estado_seguimiento_ticket, fecha_creacion, fecha_actualizacion, id_metricas, id_nota)
+       VALUES (?, ?, ?, ?, 'abierto', ?, NOW(), NOW(), ?, ?)`,
+      [idConversacion, idCliente, idUsuario, idApartamento, estadoSeguimientoTicket, idMetricas || null, idNota || null]
     );
     return result.insertId;
   } catch (error) {

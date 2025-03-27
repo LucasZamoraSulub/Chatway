@@ -12,6 +12,7 @@ export class TicketService {
     idCliente: number;
     idUsuario: number;
     idApartamento: number;
+    estadoSeguimientoTicket?: number;
     resumenMetricas?: string;
     nivelInteres?: string;
     nivelConocimiento?: string;
@@ -38,12 +39,16 @@ export class TicketService {
         idNota = await createTicketNote(params.notaAdicional);
       }
 
+      // Obtener el estado de seguimiento; si no se proporciona, se asigna el valor por defecto 1 (Pendiente)
+      const estadoSeguimientoTicket = params.estadoSeguimientoTicket || 1;
+
       // Crear el ticket utilizando los IDs obtenidos (si existen)
       const ticketId = await createTicket(
         params.idConversacion,
         params.idCliente,
         params.idUsuario,
         params.idApartamento,
+        estadoSeguimientoTicket,
         idMetricas,
         idNota
       );

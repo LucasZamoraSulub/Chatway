@@ -10,7 +10,7 @@ const registerFlow = addKeyword(EVENTS.ACTION).addAction(async (ctx, ctxFn) => {
 
   // await sheetsService.createUser(ctx.from, "Desconocido", "Sin correo");
 
-  console.log(`✅ Usuario ${ctx.from} registrado con éxito en Google Sheets.`);
+  console.log(`✅ Usuario ${ctx.from} registrado con éxito en la BD SQL Server.`);
 
   // ✅ Redirigir de vuelta a `mainFlow.ts` para validar registro y continuar
   return ctxFn.gotoFlow(mainFlow);

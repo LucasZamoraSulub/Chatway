@@ -1,11 +1,11 @@
 import poolPromise from "../database/db";
 
-// Verifica si existe un usuario por su teléfono
-export async function userExists(telefono: string): Promise<boolean> {
+// Verifica si existe un usuario por su celular en la tabla 'client'
+export async function userExists(celular: string): Promise<boolean> {
   try {
     const [rows]: any = await poolPromise.query(
-      "SELECT telefono FROM clientes_potenciales WHERE telefono = ?",
-      [telefono]
+      "SELECT celular FROM client WHERE celular = ?",
+      [celular]
     );
     return rows.length > 0;
   } catch (err) {
@@ -14,12 +14,13 @@ export async function userExists(telefono: string): Promise<boolean> {
   }
 }
 
-// Crea un nuevo usuario en clientes_potenciales
-export async function createUser(telefono: string, nombre: string, email: string): Promise<void> {
+// Crea un nuevo usuario en la tabla 'client'
+// Se insertan los campos: celular, cont (nombre de contacto) y correo
+export async function createUser(celular: string, nombre: string, email: string): Promise<void> {
   try {
     await poolPromise.query(
-      "INSERT INTO clientes_potenciales (telefono, nombre, email) VALUES (?, ?, ?)",
-      [telefono, nombre, email]
+      "INSERT INTO client (celular, cont, correo) VALUES (?, ?, ?)",
+      [celular, nombre, email]
     );
   } catch (err) {
     console.error("Error creando usuario:", err);
@@ -27,12 +28,12 @@ export async function createUser(telefono: string, nombre: string, email: string
   }
 }
 
-// Actualiza la información de un usuario existente
-export async function updateUserInfo(telefono: string, nombre: string, email: string): Promise<void> {
+// Actualiza la información de un usuario existente en 'client'
+export async function updateUserInfo(celular: string, nombre: string, email: string): Promise<void> {
   try {
     await poolPromise.query(
-      "UPDATE clientes_potenciales SET nombre = ?, email = ?, updated_at = NOW() WHERE telefono = ?",
-      [nombre, email, telefono]
+      "UPDATE client SET cont = ?, correo = ?, updated_at = NOW() WHERE celular = ?",
+      [nombre, email, celular]
     );
   } catch (err) {
     console.error("Error actualizando usuario:", err);
@@ -40,12 +41,12 @@ export async function updateUserInfo(telefono: string, nombre: string, email: st
   }
 }
 
-// Obtiene los datos del usuario por su teléfono
-export async function getUserData(telefono: string): Promise<{ nombre: string; email: string } | null> {
+// Obtiene los datos del usuario por su celular desde 'client'
+export async function getUserData(celular: string): Promise<{ nombre: string; email: string } | null> {
   try {
     const [rows]: any = await poolPromise.query(
-      "SELECT nombre, email FROM clientes_potenciales WHERE telefono = ?",
-      [telefono]
+      "SELECT cont AS nombre, correo AS email FROM client WHERE celular = ?",
+      [celular]
     );
     if (rows.length > 0) {
       return rows[0];
@@ -57,15 +58,15 @@ export async function getUserData(telefono: string): Promise<{ nombre: string; e
   }
 }
 
-// Obtiene el ID del usuario por su teléfono
-export async function getUserId(telefono: string): Promise<number | null> {
+// Obtiene el ID del usuario por su celular desde 'client'
+export async function getUserId(celular: string): Promise<number | null> {
   try {
     const [rows]: any = await poolPromise.query(
-      "SELECT id_cliente FROM clientes_potenciales WHERE telefono = ?",
-      [telefono]
+      "SELECT id_Client FROM client WHERE celular = ?",
+      [celular]
     );
     if (rows.length > 0) {
-      return rows[0].id_cliente;
+      return rows[0].id_Client;
     }
     return null;
   } catch (err) {
