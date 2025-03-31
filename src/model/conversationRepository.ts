@@ -166,6 +166,60 @@ export async function updateConversationResult(idConversacion: number, resultado
   }
 }
 
+// Función para crear el registro de métricas en la tabla conversacion_metricas
+export async function createConversationMetrics(params: {
+  resumen: string;
+  nivelInteres?: string;
+  nivelConocimiento?: string;
+  productosServiciosMencionados?: string;
+  interesProspecto?: number;
+  perfilCliente?: number;
+  nivelNecesidad?: number;
+  barrerasObjeciones?: number;
+  probabilidadVenta?: number;
+}): Promise<number> {
+  try {
+    const [result]: any = await poolPromise.query(
+      `INSERT INTO conversacion_metricas 
+       (resumen, nivel_interes, nivel_conocimiento, productos_servicios_mencionados, 
+        interes_prospecto, perfil_cliente, nivel_necesidad, barreras_objeciones, probabilidad_venta)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        params.resumen,
+        params.nivelInteres || null,
+        params.nivelConocimiento || null,
+        params.productosServiciosMencionados || null,
+        params.interesProspecto || null,
+        params.perfilCliente || null,
+        params.nivelNecesidad || null,
+        params.barrerasObjeciones || null,
+        params.probabilidadVenta || null,
+      ]
+    );
+    return result.insertId;
+  } catch (error) {
+    console.error("Error creando métricas de conversación:", error);
+    throw error;
+  }
+}
+
+// Función para actualizar la conversación asignándole el ID de métricas
+export async function updateConversationMetrics(
+  conversationId: number,
+  idMetricas: number
+): Promise<void> {
+  try {
+    await poolPromise.query(
+      "UPDATE conversacion SET id_metricas = ? WHERE id_conversacion = ?",
+      [idMetricas, conversationId]
+    );
+  } catch (error) {
+    console.error("Error actualizando métricas en la conversación:", error);
+    throw error;
+  }
+}
+
+
 //CONFIGURACION DE LA BASE DE DATOS MYSQL
 // import { database } from "../database/index";
 

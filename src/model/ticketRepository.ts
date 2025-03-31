@@ -40,16 +40,15 @@ export async function createTicket(
   idCliente: number,
   idUsuario: number,
   idApartamento: number,
-  estadoSeguimientoTicket: number,
-  idMetricas?: number,
+  estadoSeguimientoTicket: number = 1, // Valor por defecto 1 (Pendiente)
   idNota?: number
 ): Promise<number> {
   try {
     const [result]: any = await poolPromise.query(
       `INSERT INTO tickets 
-       (id_conversacion, id_cliente, id_usuario, id_apartamento, estado_ticket, estado_seguimiento_ticket, fecha_creacion, fecha_actualizacion, id_metricas, id_nota)
-       VALUES (?, ?, ?, ?, 'abierto', ?, NOW(), NOW(), ?, ?)`,
-      [idConversacion, idCliente, idUsuario, idApartamento, estadoSeguimientoTicket, idMetricas || null, idNota || null]
+       (id_conversacion, id_cliente, id_usuario, id_apartamento, estado_ticket, estado_seguimiento_ticket, fecha_creacion, fecha_actualizacion, id_nota)
+       VALUES (?, ?, ?, ?, 'abierto', ?, NOW(), NOW(), ?)`,
+      [idConversacion, idCliente, idUsuario, idApartamento, estadoSeguimientoTicket, idNota || null]
     );
     return result.insertId;
   } catch (error) {

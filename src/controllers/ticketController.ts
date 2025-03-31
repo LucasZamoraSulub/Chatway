@@ -48,8 +48,7 @@ export class TicketService {
         params.idCliente,
         params.idUsuario,
         params.idApartamento,
-        estadoSeguimientoTicket,
-        idMetricas,
+        params.estadoSeguimientoTicket || 1,
         idNota
       );
       return ticketId;
