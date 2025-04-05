@@ -47,7 +47,7 @@ Ten en cuenta que el tiempo de espera aproximado es de ${waitingTime} minutos. �
       promptFile: "prompt_Universal.txt",
       idApartamento: 1,
       fallbackResponse: `❌ No encontré información exacta, pero puedo ayudarte a encontrar la mejor opción. ¿Qué necesitas en términos de seguridad?`,
-      postOptions: "Ahora que conoces el proceso, ¿qué prefieres hacer? Puedes seguir conversando para obtener más información o, si lo deseas, te puedo transferir a un asesor para una cotización personalizada.\n\n1️⃣ *Seguir conversando*\n2️⃣ *Atención personalizada*",
+      postOptions: "Ahora que conoces el proceso, ¿qué prefieres hacer? Puedes seguir conversando para obtener más información o, si lo deseas, te puedo transferir a un asesor para una cotización personalizada.\n\n1️⃣ *Seguir conversando*\n2️⃣ *Solicitar cotización*",
       analysisPromptFile: "prompt_AnalisisConversacion_Ventas.txt",
     },
     agent: {

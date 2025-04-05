@@ -4,12 +4,12 @@ export interface CityConfig {
   }
   
   export const citiesConfig: CityConfig[] = [
-    { id: 1, name: "cancún" },
-    { id: 2, name: "playa del carmen" },
-    { id: 3, name: "puerto morelos" },
-    { id: 4, name: "tulum" },
-    { id: 5, name: "mérida" },
-    { id: 6, name: "chetumal" },
-    { id: 7, name: "yucatán" },
+    { id: 3, name: "cancún" },
+    { id: 5, name: "campeche" },
+    { id: 6, name: "isla mujeres" },
+    { id: 8, name: "mérida" },
+    { id: 9, name: "playa del carmen" },
+    { id: 10, name: "puerto morelos" },
+    { id: 11, name: "tulum" },
   ];
   
