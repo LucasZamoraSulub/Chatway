@@ -3,12 +3,20 @@ import { UserService } from "~/controllers/userController";
 import { registerFlow } from "./registerFlow";
 import { intentionGeneralFlow } from "./intentionGeneralFlow";
 import { ConversationManager } from "~/services/conversationManager";
+import { existsUserPromise } from "~/services/serviceUser";
 
 const mainFlow = addKeyword(EVENTS.WELCOME).addAction(async (ctx, ctxFn) => {
   console.log(`🔹 Usuario ${ctx.from} ha iniciado la conversación.`);
 
-  // Verificar si el usuario ya está registrado
-  const isUserRegistered = await UserService.existsUser(ctx.from);
+  // Verificar si el usuario ya está registrado utilizando la función helper
+  let isUserRegistered: boolean;
+  try {
+    isUserRegistered = await existsUserPromise(ctx.from);
+  } catch (error) {
+    console.error("Error verificando existencia de usuario:", error);
+    return ctxFn.endFlow("Error al verificar usuario.");
+  }
+
   if (!isUserRegistered) {
     console.log(`🔸 Usuario ${ctx.from} NO está registrado. Redirigiendo a registerFlow.`);
     return ctxFn.gotoFlow(registerFlow);

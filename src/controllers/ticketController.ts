@@ -1,73 +1,159 @@
-import {
-  createTicket,
-  createTicketMetrics,
-  createTicketNote,
-  updateTicketStatus,
-} from "../model/ticketRepository";
+import * as ticketRepo from "../model/ticketRepository";
 
 export class TicketService {
-  // Crea un ticket con toda la información disponible, ahora con campos separados para métricas
-  static async generateTicket(params: {
-    idConversacion: number;
-    idCliente: number;
-    idUsuario: number;
-    idApartamento: number;
-    estadoSeguimientoTicket?: number;
-    resumenMetricas?: string;
-    nivelInteres?: string;
-    nivelConocimiento?: string;
-    productosServiciosMencionados?: string;
-    notaAdicional?: string;
-  }): Promise<number> {
-    try {
-      let idMetricas: number | undefined;
-      let idNota: number | undefined;
+  // Crea un ticket con la información disponible y registra métricas y nota (si aplica)
+  static generateTicket(req: any, res: any): void {
+    // Extraer parámetros desde req.body
+    const {
+      idConversacion,
+      idCliente,
+      idUsuario,
+      idApartamento,
+      estadoSeguimientoTicket,
+      resumenMetricas,
+      nivelInteres,
+      nivelConocimiento,
+      productosServiciosMencionados,
+      notaAdicional,
+    } = req.body;
 
-      // Si se proporciona análisis de métricas, crear registro en ticket_metrics
-      if (params.resumenMetricas) {
-        idMetricas = await createTicketMetrics(
-          params.idConversacion,
-          params.resumenMetricas,
-          params.nivelInteres,
-          params.nivelConocimiento,
-          params.productosServiciosMencionados
+    // Inicializamos variables para los IDs de métricas y nota
+    let idMetricas: number | null = null;
+    let idNota: number | null = null;
+
+    // Si se proporciona análisis de métricas, crear registro en ticket_metrics
+    if (resumenMetricas) {
+      ticketRepo.createTicketMetrics(
+        idConversacion,
+        resumenMetricas,
+        nivelInteres || null,
+        nivelConocimiento || null,
+        productosServiciosMencionados || null,
+        (err: any, metricId: number) => {
+          if (err) {
+            console.error("Error creando métricas del ticket:", err);
+            return res.status(500).json({ error: err });
+          }
+          idMetricas = metricId;
+          // Si hay nota adicional, crear registro en ticket_notes
+          if (notaAdicional) {
+            ticketRepo.createTicketNote(notaAdicional, (err: any, noteId: number) => {
+              if (err) {
+                console.error("Error creando nota de ticket:", err);
+                return res.status(500).json({ error: err });
+              }
+              idNota = noteId;
+              // Finalmente, crear el ticket
+              TicketService._createTicketAndRespond(
+                idConversacion,
+                idCliente,
+                idUsuario,
+                idApartamento,
+                estadoSeguimientoTicket,
+                idNota,
+                res
+              );
+            });
+          } else {
+            // No hay nota adicional, crear ticket
+            TicketService._createTicketAndRespond(
+              idConversacion,
+              idCliente,
+              idUsuario,
+              idApartamento,
+              estadoSeguimientoTicket,
+              null,
+              res
+            );
+          }
+        }
+      );
+    } else {
+      // No hay métricas
+      if (notaAdicional) {
+        ticketRepo.createTicketNote(notaAdicional, (err: any, noteId: number) => {
+          if (err) {
+            console.error("Error creando nota de ticket:", err);
+            return res.status(500).json({ error: err });
+          }
+          idNota = noteId;
+          TicketService._createTicketAndRespond(
+            idConversacion,
+            idCliente,
+            idUsuario,
+            idApartamento,
+            estadoSeguimientoTicket,
+            idNota,
+            res
+          );
+        });
+      } else {
+        // Sin métricas ni nota
+        TicketService._createTicketAndRespond(
+          idConversacion,
+          idCliente,
+          idUsuario,
+          idApartamento,
+          estadoSeguimientoTicket,
+          null,
+          res
         );
       }
-
-      // Si hay nota adicional, crear registro en ticket_notes
-      if (params.notaAdicional) {
-        idNota = await createTicketNote(params.notaAdicional);
-      }
-
-      // Obtener el estado de seguimiento; si no se proporciona, se asigna el valor por defecto 1 (Pendiente)
-      const estadoSeguimientoTicket = params.estadoSeguimientoTicket || 1;
-
-      // Crear el ticket utilizando los IDs obtenidos (si existen)
-      const ticketId = await createTicket(
-        params.idConversacion,
-        params.idCliente,
-        params.idUsuario,
-        params.idApartamento,
-        params.estadoSeguimientoTicket || 1,
-        idNota
-      );
-      return ticketId;
-    } catch (error) {
-      console.error("TicketService - generateTicket error:", error);
-      throw error;
     }
+  }
+
+  // Función interna para crear el ticket y enviar la respuesta
+  private static _createTicketAndRespond(
+    idConversacion: number,
+    idCliente: number,
+    idUsuario: number,
+    idApartamento: number,
+    estadoSeguimientoTicket: number | undefined,
+    idNota: number | null,
+    res: any
+  ): void {
+    // Asignar valor por defecto 1 a estadoSeguimientoTicket si no se proporciona
+    const seguimiento = estadoSeguimientoTicket || 1;
+    ticketRepo.createTicket(
+      idConversacion,
+      idCliente,
+      idUsuario,
+      idApartamento,
+      seguimiento,
+      idNota,
+      (err: any, ticketId: number) => {
+        if (err) {
+          console.error("Error creando ticket:", err);
+          return res.status(500).json({ error: err });
+        }
+        console.log("Ticket generado con ID:", ticketId);
+        res.json({ success: true, ticketId });
+      }
+    );
   }
 
   // Método para actualizar el estado del ticket
-  static async changeTicketStatus(
-    idTicket: number,
-    nuevoEstado: string
-  ): Promise<void> {
-    try {
-      await updateTicketStatus(idTicket, nuevoEstado);
-    } catch (error) {
-      console.error("TicketService - changeTicketStatus error:", error);
-      throw error;
-    }
+  static changeTicketStatus(req: any, res: any): void {
+    const { idTicket, nuevoEstado } = req.body;
+    ticketRepo.updateTicketStatus(idTicket, nuevoEstado, (err: any, result: any) => {
+      if (err) {
+        console.error("Error actualizando estado de ticket:", err);
+        return res.status(500).json({ error: err });
+      }
+      res.json({ success: true, result });
+    });
+  }
+  
+  // Método para actualizar el estado de seguimiento del ticket
+  static changeTicketSeguimiento(req: any, res: any): void {
+    const { ticketId, nuevoSeguimiento } = req.body;
+    ticketRepo.updateTicketSeguimientoTicket(ticketId, nuevoSeguimiento, (err: any, result: any) => {
+      if (err) {
+        console.error("Error actualizando estado de seguimiento de ticket:", err);
+        return res.status(500).json({ error: err });
+      }
+      res.json({ success: true, result });
+    });
   }
 }
+

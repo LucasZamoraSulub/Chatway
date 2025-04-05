@@ -2,74 +2,41 @@ import { addKeyword, EVENTS } from "@builderbot/bot";
 import { mainMenuFlow } from "./mainMenuFlow";
 import { intermediaryFlow } from "./intermediaryFlow";
 import { genericAgentFlow } from "./liveAgents/genericAgentFlow";
-import { areasConfig, AreaConfig } from "~/config/areas.config";
-import { ConversationManager } from "~/services/conversationManager";
 import { intentionGeneralFlow } from "./intentionGeneralFlow";
+import { AreaConfigService } from "~/services/areaConfigService";
+import { ConversationManager } from "~/services/conversationManager";
+import { sendAndLogMessage } from "~/services/messageHelper";
 
 const selectServiceModeFlow = addKeyword(EVENTS.ACTION)
   .addAction(async (ctx, ctxFn) => {
-    // Obtener el área seleccionada del estado
+    // Obtener el área seleccionada desde el state
     const selectedFlow: string = await ctxFn.state.get("selectedFlow");
-
-    // Buscar la configuración del área en areasConfig
-    const config: AreaConfig | undefined = areasConfig.find(
-      (area) => area.area === selectedFlow
-    );
-
-    // Validación: Si no hay un área seleccionada o no existe la configuración, redirige al menú principal
     if (!selectedFlow) {
       console.log(`⚠️ No se encontró un área válida para ${ctx.from}.`);
       return ctxFn.gotoFlow(mainMenuFlow);
     }
-    if (!config) {
-      console.log(
-        `⚠️ No se encontró configuración para el área ${selectedFlow}.`
-      );
+
+    // Obtener y validar la configuración del área de forma centralizada
+    let areaConfig;
+    try {
+      areaConfig = AreaConfigService.getAreaConfig(selectedFlow);
+    } catch (error) {
+      console.error(error.message);
       return ctxFn.gotoFlow(mainMenuFlow);
     }
 
-    // Enviar mensaje de bienvenida dinámico (incluye el tiempo de espera) para el área
-    const areaMessage = config.welcomeMessage(config.waitingTime);
-    await ctxFn.flowDynamic(areaMessage);
+    // Enviar mensaje de bienvenida dinámico utilizando el helper
+    const areaMessage = areaConfig.welcomeMessage(areaConfig.waitingTime);
+    await sendAndLogMessage(ctx, ctxFn, "assistant", areaMessage);
 
-    // Registrar el mensaje del bot (bienvenida) en la conversación
-    const conversationId = await ctxFn.state.get("conversationId");
-    if (conversationId) {
-      await ConversationManager.logInteraction(
-        ctx,
-        ctxFn.state,
-        "assistant",
-        areaMessage
-      );
-    } else {
-      console.error(
-        "No se encontró conversationId para registrar el mensaje de bienvenida."
-      );
-    }
-
-    // Enviar mensaje aparte con las opciones de modalidad
+    // Enviar mensaje de opciones para seleccionar modalidad
     const optionsMessage =
       "\n1️⃣ *Seguir con mi ayuda y obtener información ahora mismo.* 🤖\n" +
       "2️⃣ *Hablar con un asesor y esperar su respuesta.* 👨";
-    await ctxFn.flowDynamic(optionsMessage);
-
-    // Registrar el mensaje del bot (opciones) en la conversación
-    if (conversationId) {
-      await ConversationManager.logInteraction(
-        ctx,
-        ctxFn.state,
-        "assistant",
-        optionsMessage
-      );
-    } else {
-      console.error(
-        "No se encontró conversationId para registrar el mensaje de opciones."
-      );
-    }
+    await sendAndLogMessage(ctx, ctxFn, "assistant", optionsMessage);
   })
   .addAction({ capture: true }, async (ctx, ctxFn) => {
     const userChoice = ctx.body.toLowerCase().trim();
-
     console.log(`📥 Usuario ${ctx.from} respondió: ${ctx.body}`);
 
     // Registrar la respuesta del usuario
@@ -83,39 +50,35 @@ const selectServiceModeFlow = addKeyword(EVENTS.ACTION)
       );
     }
 
-    // Validar que el área seleccionada existe
+    // Validar que exista un área seleccionada y obtener la configuración
     const selectedFlow: string = await ctxFn.state.get("selectedFlow");
     if (!selectedFlow) {
       console.log(`⚠️ No se encontró un área válida para ${ctx.from}.`);
       return ctxFn.gotoFlow(mainMenuFlow);
     }
-    const config: AreaConfig | undefined = areasConfig.find(
-      (area) => area.area === selectedFlow
-    );
-    if (!config) {
-      console.log(
-        `⚠️ No se encontró configuración para el área ${selectedFlow}.`
-      );
+    let areaConfig;
+    try {
+      areaConfig = AreaConfigService.getAreaConfig(selectedFlow);
+    } catch (error) {
+      console.error(error.message);
       return ctxFn.gotoFlow(mainMenuFlow);
     }
 
-    // Opción Bot: redirige a intermediaryFlow (atención vía bot)
+    // Redirigir según la opción seleccionada
     if (userChoice.includes("1") || userChoice.includes("bot")) {
       console.log(
         `🤖 Usuario ${ctx.from} optó por atención vía bot en ${selectedFlow}.`
       );
       return ctxFn.gotoFlow(intermediaryFlow);
     }
-
-    // Opción Agente: redirige al flujo configurado para atención en vivo en función del área
     if (userChoice.includes("2") || userChoice.includes("agente")) {
       console.log(
-        `📞 Usuario ${ctx.from} optó por ser atendido por un agente en ${selectedFlow}.`
+        `📞 Usuario ${ctx.from} optó por atención en vivo en ${selectedFlow}.`
       );
       return ctxFn.gotoFlow(genericAgentFlow);
     }
 
-    // Si la opción no es válida, redirigir a intentionGeneralFlow sin registrar mensaje extra
+    // Si la opción no es válida, redirigir a intentionGeneralFlow
     console.log(
       `⚠️ Usuario ${ctx.from} ingresó una opción no válida. Redirigiendo a intentionGeneralFlow.`
     );

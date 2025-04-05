@@ -16,11 +16,6 @@ const flowMap: Record<string, () => Promise<any>> = {
 
 export const intentionGeneralFlow = addKeyword(EVENTS.ACTION).addAction(
   async (ctx, ctxFn) => {
-    // // Aseguramos que exista la conversación (si no existe, se crea)
-    // const conversationId = await ConversationManager.ensureConversation(
-    //   ctx,
-    //   ctxFn.state
-    // );
 
     // Obtenemos el mensaje inicial: si hay un valor en "initialMessage" en el estado, lo usamos; de lo contrario, el cuerpo de la request
     let userMessage: string | undefined = await ctxFn.state.get(
@@ -29,14 +24,6 @@ export const intentionGeneralFlow = addKeyword(EVENTS.ACTION).addAction(
     if (!userMessage) {
       userMessage = ctx.body;
     }
-
-    // // Registrar el mensaje inicial del usuario en la conversación
-    // await ConversationManager.logInteraction(
-    //   ctx,
-    //   ctxFn.state,
-    //   "user",
-    //   userMessage
-    // );
 
     // Primero, intentar detectar la intención mediante palabras clave (retornando un arreglo)
     const detectedKeywords = detectKeywordIntents(userMessage);

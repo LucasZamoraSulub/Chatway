@@ -1,11 +1,13 @@
-import mysql from "mysql2/promise";
+//import mysql from "mysql2/promise";
 import { config } from "../config";
+import * as mysql from 'mysql';
 
-export const poolPromise = mysql.createPool({
+const poolPromise = mysql.createPool({
   host: config.server,
   user: config.user,
   password: config.password,
   database: config.database,
+  charset: 'utf8mb4',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,

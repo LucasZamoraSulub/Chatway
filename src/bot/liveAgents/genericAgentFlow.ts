@@ -1,81 +1,96 @@
 import { addKeyword, EVENTS } from "@builderbot/bot";
 import { areasConfig, AreaConfig } from "~/config/areas.config";
-import { sendTicketToCRM } from "~/services/crmService";
+import { sendMessageToCRM } from "~/services/crmService";
 import { ConversationManager } from "~/services/conversationManager";
+import { updateTicketSeguimientoPromise } from "~/services/serviceTicket";
 
 export const genericAgentFlow = addKeyword(EVENTS.ACTION)
+  // Acción de inicialización (se ejecuta solo la primera vez que se ingresa al flujo)
   .addAction(async (ctx, ctxFn) => {
-    console.log(
-      `🛠️ Usuario ${ctx.from} ha ingresado al flujo genérico de atención personalizada.`
+    const isAgentFlowInitialized = await ctxFn.state.get(
+      "isAgentFlowInitialized"
     );
+    if (!isAgentFlowInitialized) {
+      // Marcar que se ha inicializado el flujo de atención personalizada y desactivar el bot
+      await ctxFn.state.update({
+        isAgentFlowInitialized: true,
+        botOffForThisUser: true,
+      });
+      console.log(`Bot desactivado para el usuario ${ctx.from}.`);
 
-    // Notificar al CRM enviando el ticket generado
-    // const ticketId = await ctxFn.state.get("ticketId");
-    // if (ticketId) {
-    //   try {
-    //     await sendTicketToCRM(ticketId);
-    //     console.log(`Ticket ${ticketId} notificado al CRM correctamente.`);
-    //   } catch (error) {
-    //     console.error("Error al notificar al CRM:", error);
-    //   }
-    // } else {
-    //   console.warn(
-    //     "No se encontró ticketId en el estado para notificar al CRM."
-    //   );
-    // }
+      // Obtener el id del ticket desde el estado
+      const ticketId = await ctxFn.state.get("ticketId");
+      // Actualizar el estado del ticket a "En atención personalizada"
+      await updateTicketSeguimientoPromise({
+        ticketId,
+        nuevoSeguimiento: 6, // Estado "En atención personalizada"
+      });
+      console.log(`Estado del ticket ${ticketId} actualizado a "Pendiente".`);
 
-    // Obtener el área seleccionada desde el estado
-    const selectedFlow: string = await ctxFn.state.get("selectedFlow");
-    // Buscar la configuración correspondiente
-    const areaConfig: AreaConfig | undefined = areasConfig.find(
-      (area) => area.area === selectedFlow
-    );
+      // Si hay área seleccionada, actualizar el estado de la conversación (solo una vez)
+      const selectedFlow: string = await ctxFn.state.get("selectedFlow");
+      if (selectedFlow) {
+        await ConversationManager.updateState(ctx, ctxFn.state, 4); // Estado "Atención personalizada"
+      }
 
-    if (!areaConfig || !areaConfig.agent) {
-      console.error(
-        `⚠️ No se encontró configuración de agente para el área ${selectedFlow}`
-      );
-      return ctxFn.endFlow(
-        "No se encontró configuración para atención personalizada. Vuelve al menú principal."
-      );
-    }
-
-    // Actualizar el estado de la conversación a 4 ("Atención personalizada")
-    await ConversationManager.updateState(ctx, ctxFn.state, 4);
-
-    // Generar el mensaje de atención personalizada usando la función agentMessage y el waitingTime
-    const message = areaConfig.agent.agentMessage(areaConfig.waitingTime);
-    await ctxFn.flowDynamic(message);
-    // Registrar el mensaje del bot en la BD
-    const convId = await ctxFn.state.get("conversationId");
-    if (convId) {
-      await ConversationManager.logInteraction(
-        ctx,
-        ctxFn.state,
-        "assistant",
-        message
-      );
-    } else {
-      console.error(
-        "No se encontró conversationId para registrar el mensaje del bot en genericAgentFlow."
-      );
+      // Enviar el mensaje de bienvenida de atención personalizada directamente
+      if (selectedFlow) {
+        const areaConfig: AreaConfig | undefined = areasConfig.find(
+          (area) => area.area === selectedFlow
+        );
+        if (areaConfig && areaConfig.agent) {
+          const welcomeMessage = areaConfig.agent.agentMessage(
+            areaConfig.waitingTime
+          );
+          await ctxFn.flowDynamic(welcomeMessage);
+          await ConversationManager.logInteraction(
+            ctx,
+            ctxFn.state,
+            "assistant",
+            welcomeMessage
+          );
+        }
+      }
     }
   })
-  .addAction(async (ctx, { endFlow, state }) => {
-    const selectedFlow: string = await state.get("selectedFlow");
-    const areaConfig: AreaConfig | undefined = areasConfig.find(
-      (area) => area.area === selectedFlow
-    );
-    let finalMessage = "Atención personalizada finalizada.";
-    if (areaConfig && areaConfig.agent) {
-      finalMessage = areaConfig.agent.endFlowMessage;
+  // Acción para capturar los mensajes entrantes, registrarlos y notificar al CRM
+  .addAction({ capture: true }, async (ctx, { gotoFlow, endFlow, state }) => {
+    // Verificar si el bot sigue desactivado para este usuario
+    const botOff = await state.get<boolean>("botOffForThisUser");
+    if (!botOff) {
+      console.log(
+        `Bot reactivado para el usuario ${ctx.from}. Saliendo de atención personalizada.`
+      );
+      return endFlow(
+        "Atención personalizada finalizada. El bot ha sido reactivado."
+      );
     }
-    // Registrar el mensaje final del bot en la BD
-    const conversationId = await state.get("conversationId");
-    if (conversationId) {
-      await ConversationManager.logInteraction(ctx, state, "assistant", finalMessage);
+
+    const incomingMessage = ctx.body;
+    console.log(`📩 Mensaje recibido de ${ctx.from}: ${incomingMessage}`);
+
+    // Registrar el mensaje del usuario en la conversación
+    try {
+      await ConversationManager.logInteraction(
+        ctx,
+        state,
+        "user",
+        incomingMessage
+      );
+    } catch (error) {
+      console.error("Error registrando el mensaje del usuario:", error);
     }
-    console.log(`✅ Conversación finalizada después de atención personalizada en ${selectedFlow}.`);
-    return endFlow(finalMessage);
+
+    try {
+      // Obtener el id del ticket desde el estado
+      const ticketId = await state.get("ticketId");
+      // Notificar el mensaje al CRM usando el servicio sendMessageToCRM con los parámetros actualizados
+      await sendMessageToCRM(incomingMessage, ctx.from, ticketId);
+      console.log(`Mensaje de ${ctx.from} notificado al CRM correctamente.`);
+    } catch (error) {
+      console.error("Error al notificar el mensaje al CRM:", error);
+    }
+
+    // Permanece en el flujo de atención personalizada para seguir capturando mensajes
+    return gotoFlow(genericAgentFlow);
   });
-  

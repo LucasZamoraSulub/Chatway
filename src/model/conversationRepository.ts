@@ -2,184 +2,292 @@ import poolPromise from "../database/db";
 
 // Función para crear una nueva conversación
 // Se establece por defecto el estado de la conversación como "Chat Iniciado" (id 1 en la tabla estado_conversación)
-export async function createConversation(idCliente: number): Promise<number> {
-  try {
-    const [result]: any = await poolPromise.query(
+export function createConversation(idCliente: number, result: any): void {
+  poolPromise.getConnection((err: any, connection: any) => {
+    if (err) {
+      console.error("Error obteniendo conexión:", err);
+      return result(err);
+    }
+    connection.query(
       "INSERT INTO conversacion (id_cliente, estado_conversacion) VALUES (?, ?)",
-      [idCliente, 1]
+      [idCliente, 1],
+      (error: any, res: any) => {
+        connection.release();
+        if (error) {
+          console.error("Error creando conversación:", error);
+          return result(error);
+        }
+        result(null, res.insertId);
+      }
     );
-    return result.insertId;
-  } catch (error) {
-    console.error("Error creando conversación:", error);
-    throw error;
-  }
+  });
 }
 
 // Función para actualizar el estado de una conversación
-// Se actualiza la columna "estado" (que acepta 'activa', 'finalizada' o 'cancelada') y se fija la fecha de finalización
-export async function updateConversationStatus(idConversacion: number, estado: string): Promise<void> {
-  try {
-    await poolPromise.query(
+// Se actualiza la columna "estado" y se fija la fecha de finalización
+export function updateConversationStatus(idConversacion: number, estado: string, result: any): void {
+  poolPromise.getConnection((err: any, connection: any) => {
+    if (err) {
+      console.error("Error obteniendo conexión:", err);
+      return result(err);
+    }
+    connection.query(
       "UPDATE conversacion SET estado = ?, fecha_fin = NOW() WHERE id_conversacion = ?",
-      [estado, idConversacion]
+      [estado, idConversacion],
+      (error: any, res: any) => {
+        connection.release();
+        if (error) {
+          console.error("Error actualizando estado de conversación:", error);
+          return result(error);
+        }
+        result(null, res);
+      }
     );
-  } catch (error) {
-    console.error("Error actualizando estado de conversación:", error);
-    throw error;
-  }
+  });
 }
 
 // Función para insertar un mensaje en la tabla mensajes
-export async function addConversationMessage(
+export function addConversationMessage(
   idConversacion: number,
   mensajeUsuario: string,
   respuesta: string,
-  options?: { idUsuario?: number; idApartamento?: number }
-): Promise<void> {
-  try {
+  options: { idUsuario?: number; idApartamento?: number } | undefined,
+  result: any
+): void {
+  poolPromise.getConnection((err: any, connection: any) => {
+    if (err) {
+      console.error("Error obteniendo conexión:", err);
+      return result(err);
+    }
     let finalIdUsuario = options?.idUsuario;
-
-    // Si no se proporciona idUsuario, se obtiene el bot asignado al área (usando id_apartamento) con Tipo_Usuario = 1
     if (!finalIdUsuario) {
       if (!options?.idApartamento) {
-        throw new Error("idApartamento es requerido para determinar el id del bot por defecto.");
+        connection.release();
+        return result(new Error("idApartamento es requerido para determinar el id del bot por defecto."));
       }
-      const [rows]: any = await poolPromise.query(
+      connection.query(
         "SELECT Id_Usuario FROM usuario WHERE Tipo_Usuario = 1 AND Area_Trabajo_Id_Area = ? LIMIT 1",
-        [options.idApartamento]
+        [options.idApartamento],
+        (error: any, rows: any) => {
+          if (error) {
+            connection.release();
+            console.error("Error obteniendo id del bot:", error);
+            return result(error);
+          }
+          if (rows.length === 0) {
+            connection.release();
+            return result(new Error("No se encontró un bot asignado para el área especificada."));
+          }
+          finalIdUsuario = rows[0].Id_Usuario;
+          connection.query(
+            "INSERT INTO mensajes (id_conversacion, mensaje_usuario, respuesta, id_usuario, fecha_envio, fecha_respuesta) VALUES (?, ?, ?, ?, NOW(), NOW())",
+            [idConversacion, mensajeUsuario, respuesta, finalIdUsuario],
+            (error: any, res: any) => {
+              connection.release();
+              if (error) {
+                console.error("Error insertando mensaje de conversación:", error);
+                return result(error);
+              }
+              result(null, res);
+            }
+          );
+        }
       );
-      if (rows.length === 0) {
-        throw new Error("No se encontró un bot asignado para el área especificada.");
-      }
-      finalIdUsuario = rows[0].Id_Usuario;
+    } else {
+      connection.query(
+        "INSERT INTO mensajes (id_conversacion, mensaje_usuario, respuesta, id_usuario, fecha_envio, fecha_respuesta) VALUES (?, ?, ?, ?, NOW(), NOW())",
+        [idConversacion, mensajeUsuario, respuesta, finalIdUsuario],
+        (error: any, res: any) => {
+          connection.release();
+          if (error) {
+            console.error("Error insertando mensaje de conversación:", error);
+            return result(error);
+          }
+          result(null, res);
+        }
+      );
     }
-
-    await poolPromise.query(
-      "INSERT INTO mensajes (id_conversacion, mensaje_usuario, respuesta, id_usuario, fecha_envio, fecha_respuesta) VALUES (?, ?, ?, ?, NOW(), NOW())",
-      [idConversacion, mensajeUsuario, respuesta, finalIdUsuario]
-    );
-  } catch (error) {
-    console.error("Error insertando mensaje de conversación:", error);
-    throw error;
-  }
+  });
 }
 
-
 // Función para obtener los últimos mensajes de una conversación
-export async function getLastMessages(idConversacion: number, limit: number = 3): Promise<any[]> {
-  try {
-    const [rows]: any = await poolPromise.query(
+export function getLastMessages(idConversacion: number, limit: number, result: any): void {
+  poolPromise.getConnection((err: any, connection: any) => {
+    if (err) {
+      console.error("Error obteniendo conexión:", err);
+      return result(err);
+    }
+    connection.query(
       "SELECT mensaje_usuario, respuesta, fecha_envio, fecha_respuesta FROM mensajes WHERE id_conversacion = ? ORDER BY fecha_envio DESC LIMIT ?",
-      [idConversacion, limit]
+      [idConversacion, limit],
+      (error: any, rows: any) => {
+        connection.release();
+        if (error) {
+          console.error("Error obteniendo mensajes:", error);
+          return result(error);
+        }
+        result(null, rows.reverse()); // Invertir el orden para cronología ascendente
+      }
     );
-    // Revertir el orden para obtenerlos en secuencia cronológica (del más antiguo al más reciente)
-    return rows.reverse();
-  } catch (error) {
-    console.error("Error obteniendo mensajes:", error);
-    throw error;
-  }
+  });
 }
 
 // Función para obtener TODOS los mensajes de una conversación
-export async function getAllMessages(idConversacion: number): Promise<any[]> {
-  try {
-    const [rows]: any = await poolPromise.query(
+export function getAllMessages(idConversacion: number, result: any): void {
+  poolPromise.getConnection((err: any, connection: any) => {
+    if (err) {
+      console.error("Error obteniendo conexión:", err);
+      return result(err);
+    }
+    connection.query(
       "SELECT mensaje_usuario, respuesta, fecha_envio, fecha_respuesta FROM mensajes WHERE id_conversacion = ? ORDER BY fecha_envio ASC",
-      [idConversacion]
+      [idConversacion],
+      (error: any, rows: any) => {
+        connection.release();
+        if (error) {
+          console.error("Error obteniendo todos los mensajes:", error);
+          return result(error);
+        }
+        result(null, rows);
+      }
     );
-    return rows;
-  } catch (error) {
-    console.error("Error obteniendo todos los mensajes:", error);
-    throw error;
-  }
+  });
 }
 
 // Función para obtener el bot asignado a un área
-export async function getBotForArea(idApartamento: number): Promise<number> {
-  try {
-    const [rows]: any = await poolPromise.query(
-      "SELECT Id_Usuario FROM usuario WHERE Tipo_Usuario = 1 AND Area_Trabajo_Id_Area = ? LIMIT 1",
-      [idApartamento]
-    );
-    if (rows.length === 0) {
-      throw new Error("No se encontró un bot asignado para el área especificada.");
+export function getBotForArea(idApartamento: number, result: any): void {
+  poolPromise.getConnection((err: any, connection: any) => {
+    if (err) {
+      console.error("Error obteniendo conexión:", err);
+      return result(err);
     }
-    return rows[0].Id_Usuario;
-  } catch (error) {
-    console.error("Error en getBotForArea:", error);
-    throw error;
-  }
+    connection.query(
+      "SELECT Id_Usuario FROM usuario WHERE Tipo_Usuario = 1 AND Area_Trabajo_Id_Area = ? LIMIT 1",
+      [idApartamento],
+      (error: any, rows: any) => {
+        connection.release();
+        if (error) {
+          console.error("Error en getBotForArea:", error);
+          return result(error);
+        }
+        if (rows.length === 0) {
+          return result(new Error("No se encontró un bot asignado para el área especificada."));
+        }
+        result(null, rows[0].Id_Usuario);
+      }
+    );
+  });
 }
 
 // Método unificado para registrar una interacción en la tabla "mensajes"
-export async function insertInteraction(
+export function insertInteraction(
   idConversacion: number,
   role: "user" | "assistant",
   content: string,
-  idUsuario?: number
-): Promise<void> {
-  try {
+  idUsuario: number | undefined,
+  result: any
+): void {
+  poolPromise.getConnection((err: any, connection: any) => {
+    if (err) {
+      console.error("Error obteniendo conexión:", err);
+      return result(err);
+    }
     if (role === "user") {
-      // Para mensajes del usuario: se guarda el contenido en "mensaje_usuario" y "respuesta" queda vacío.
-      await poolPromise.query(
+      connection.query(
         "INSERT INTO mensajes (id_conversacion, mensaje_usuario, respuesta, id_usuario, fecha_envio, fecha_respuesta) VALUES (?, ?, '', ?, NOW(), NOW())",
-        [idConversacion, content, idUsuario || null]
+        [idConversacion, content, idUsuario || null],
+        (error: any, res: any) => {
+          connection.release();
+          if (error) {
+            console.error("Error insertando interacción (user):", error);
+            return result(error);
+          }
+          result(null, res);
+        }
       );
     } else {
-      // Para mensajes del bot (assistant): se guarda el contenido en "respuesta" y "mensaje_usuario" queda vacío.
-      // Si no se proporciona idUsuario, usamos un id de bot por defecto (por ejemplo, 1)
       const botId = idUsuario || 1;
-      await poolPromise.query(
+      connection.query(
         "INSERT INTO mensajes (id_conversacion, mensaje_usuario, respuesta, id_usuario, fecha_envio, fecha_respuesta) VALUES (?, '', ?, ?, NOW(), NOW())",
-        [idConversacion, content, botId]
+        [idConversacion, content, botId],
+        (error: any, res: any) => {
+          connection.release();
+          if (error) {
+            console.error("Error insertando interacción (assistant):", error);
+            return result(error);
+          }
+          result(null, res);
+        }
       );
     }
-  } catch (error) {
-    console.error("Error inserting interaction:", error);
-    throw error;
-  }
+  });
 }
 
 // Actualiza el campo estado_conversacion en la tabla conversacion
-export async function updateConversationState(idConversacion: number, estado: number): Promise<void> {
-  try {
-    await poolPromise.query(
+export function updateConversationState(idConversacion: number, estado: number, result: any): void {
+  poolPromise.getConnection((err: any, connection: any) => {
+    if (err) {
+      console.error("Error obteniendo conexión:", err);
+      return result(err);
+    }
+    connection.query(
       "UPDATE conversacion SET estado_conversacion = ? WHERE id_conversacion = ?",
-      [estado, idConversacion]
+      [estado, idConversacion],
+      (error: any, res: any) => {
+        connection.release();
+        if (error) {
+          console.error("Error actualizando estado_conversacion:", error);
+          return result(error);
+        }
+        result(null, res);
+      }
     );
-  } catch (error) {
-    console.error("Error actualizando estado_conversacion:", error);
-    throw error;
-  }
+  });
 }
 
 // Actualiza el campo resultado_conversacion en la tabla conversacion
-export async function updateConversationResult(idConversacion: number, resultado: number): Promise<void> {
-  try {
-    await poolPromise.query(
+export function updateConversationResult(idConversacion: number, resultado: number, result: any): void {
+  poolPromise.getConnection((err: any, connection: any) => {
+    if (err) {
+      console.error("Error obteniendo conexión:", err);
+      return result(err);
+    }
+    connection.query(
       "UPDATE conversacion SET resultado_conversacion = ? WHERE id_conversacion = ?",
-      [resultado, idConversacion]
+      [resultado, idConversacion],
+      (error: any, res: any) => {
+        connection.release();
+        if (error) {
+          console.error("Error actualizando resultado_conversacion:", error);
+          return result(error);
+        }
+        result(null, res);
+      }
     );
-  } catch (error) {
-    console.error("Error actualizando resultado_conversacion:", error);
-    throw error;
-  }
+  });
 }
 
 // Función para crear el registro de métricas en la tabla conversacion_metricas
-export async function createConversationMetrics(params: {
-  resumen: string;
-  nivelInteres?: string;
-  nivelConocimiento?: string;
-  productosServiciosMencionados?: string;
-  interesProspecto?: number;
-  perfilCliente?: number;
-  nivelNecesidad?: number;
-  barrerasObjeciones?: number;
-  probabilidadVenta?: number;
-}): Promise<number> {
-  try {
-    const [result]: any = await poolPromise.query(
+export function createConversationMetrics(
+  params: {
+    resumen: string;
+    nivelInteres?: string;
+    nivelConocimiento?: string;
+    productosServiciosMencionados?: string;
+    interesProspecto?: number;
+    perfilCliente?: number;
+    nivelNecesidad?: number;
+    barrerasObjeciones?: number;
+    probabilidadVenta?: number;
+  },
+  result: any
+): void {
+  poolPromise.getConnection((err: any, connection: any) => {
+    if (err) {
+      console.error("Error obteniendo conexión:", err);
+      return result(err);
+    }
+    connection.query(
       `INSERT INTO conversacion_metricas 
        (resumen, nivel_interes, nivel_conocimiento, productos_servicios_mencionados, 
         interes_prospecto, perfil_cliente, nivel_necesidad, barreras_objeciones, probabilidad_venta)
@@ -194,29 +302,43 @@ export async function createConversationMetrics(params: {
         params.nivelNecesidad || null,
         params.barrerasObjeciones || null,
         params.probabilidadVenta || null,
-      ]
+      ],
+      (error: any, res: any) => {
+        connection.release();
+        if (error) {
+          console.error("Error creando métricas de conversación:", error);
+          return result(error);
+        }
+        result(null, res.insertId);
+      }
     );
-    return result.insertId;
-  } catch (error) {
-    console.error("Error creando métricas de conversación:", error);
-    throw error;
-  }
+  });
 }
 
 // Función para actualizar la conversación asignándole el ID de métricas
-export async function updateConversationMetrics(
+export function updateConversationMetrics(
   conversationId: number,
-  idMetricas: number
-): Promise<void> {
-  try {
-    await poolPromise.query(
+  idMetricas: number,
+  result: any
+): void {
+  poolPromise.getConnection((err: any, connection: any) => {
+    if (err) {
+      console.error("Error obteniendo conexión:", err);
+      return result(err);
+    }
+    connection.query(
       "UPDATE conversacion SET id_metricas = ? WHERE id_conversacion = ?",
-      [idMetricas, conversationId]
+      [idMetricas, conversationId],
+      (error: any, res: any) => {
+        connection.release();
+        if (error) {
+          console.error("Error actualizando métricas en la conversación:", error);
+          return result(error);
+        }
+        result(null, res);
+      }
     );
-  } catch (error) {
-    console.error("Error actualizando métricas en la conversación:", error);
-    throw error;
-  }
+  });
 }
 
 

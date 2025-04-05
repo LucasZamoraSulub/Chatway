@@ -1,61 +1,99 @@
-import {
-  userExists,
-  createUser,
-  updateUserInfo,
-  getUserData,
-  getUserId,
-} from "../model/userRepository";
+import * as userRepo from "../model/userRepository";
 
 export class UserService {
-  // Verifica si un usuario existe a través de su celular
-  public static async existsUser(celular: string): Promise<boolean> {
-    try {
-      return await userExists(celular);
-    } catch (error) {
-      console.error("UserService - existsUser error:", error);
-      throw error;
-    }
-  }
-
-  // Registra un usuario; si ya existe, actualiza su información
-  public static async registerUser(
-    celular: string,
-    nombre: string,
-    email: string
-  ): Promise<void> {
-    try {
-      const exists = await userExists(celular);
-      if (!exists) {
-        await createUser(celular, nombre, email);
-      } else {
-        // Actualiza la información en caso de que ya exista
-        await updateUserInfo(celular, nombre, email);
+  // Verifica si existe un usuario a partir de su celular
+  static existsUser(req: any, res: any): void {
+    const { celular } = req.body;
+    userRepo.userExists(celular, (err: any, exists: boolean) => {
+      if (err) {
+        console.error("Error verificando existencia de usuario:", err);
+        return res.status(500).json({ error: err });
       }
-    } catch (error) {
-      console.error("UserService - registerUser error:", error);
-      throw error;
-    }
+      console.log("Resultado de existsUser:", exists);
+      res.json({ success: true, exists });
+    });
   }
 
-  // Recupera los datos del usuario (nombre y email)
-  public static async fetchUserData(
-    celular: string
-  ): Promise<{ nombre: string; email: string } | null> {
-    try {
-      return await getUserData(celular);
-    } catch (error) {
-      console.error("UserService - fetchUserData error:", error);
-      throw error;
-    }
+  // Registra un usuario o actualiza su información si ya existe
+  static registerUser(req: any, res: any): void {
+    const { celular, nombre, email } = req.body;
+    userRepo.userExists(celular, (err: any, exists: boolean) => {
+      if (err) {
+        console.error("Error verificando usuario:", err);
+        return res.status(500).json({ error: err });
+      }
+      if (!exists) {
+        userRepo.createUser(celular, nombre, email, (err: any, result: any) => {
+          if (err) {
+            console.error("Error creando usuario:", err);
+            return res.status(500).json({ error: err });
+          }
+          console.log("Usuario creado:", result);
+          res.json({ success: true, message: "Usuario creado", result });
+        });
+      } else {
+        userRepo.updateUserInfo(
+          celular,
+          nombre,
+          email,
+          (err: any, result: any) => {
+            if (err) {
+              console.error("Error actualizando usuario:", err);
+              return res.status(500).json({ error: err });
+            }
+            console.log("Usuario actualizado:", result);
+            res.json({ success: true, message: "Usuario actualizado", result });
+          }
+        );
+      }
+    });
+  }
+
+  // Obtiene los datos del usuario (nombre y email)
+  static getUserData(req: any, res: any): void {
+    const { celular } = req.body;
+    userRepo.getUserData(
+      celular,
+      (err: any, data: { nombre: string; email: string } | null) => {
+        if (err) {
+          console.error("Error obteniendo datos del usuario:", err);
+          return res.status(500).json({ error: err });
+        }
+        res.json({ success: true, data });
+      }
+    );
   }
 
   // Obtiene el ID del usuario a partir de su celular
-  public static async fetchUserId(celular: string): Promise<number | null> {
-    try {
-      return await getUserId(celular);
-    } catch (error) {
-      console.error("UserService - fetchUserId error:", error);
-      throw error;
-    }
+  static getUserId(req: any, res: any): void {
+    const { celular } = req.body;
+    userRepo.getUserId(celular, (err: any, id: number | null) => {
+      if (err) {
+        console.error("Error obteniendo id del usuario:", err);
+        return res.status(500).json({ error: err });
+      }
+      res.json({ success: true, id });
+    });
+  }
+
+  // Actualiza el email y la ciudad del cliente en la tabla client
+  static updateContactInfo(req: any, res: any): void {
+    const { celular, email, city } = req.body;
+    userRepo.updateClientContactInfo(
+      celular,
+      email,
+      city,
+      (err: any, result: any) => {
+        if (err) {
+          console.error("Error actualizando la información de contacto:", err);
+          return res.status(500).json({ error: err });
+        }
+        res.json({
+          success: true,
+          message: "Información de contacto actualizada",
+          result,
+        });
+      }
+    );
   }
 }

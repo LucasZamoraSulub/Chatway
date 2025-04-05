@@ -1,6 +1,7 @@
 // src/services/conversationManager.ts
 import { ConversationService } from "~/controllers/conversationController";
 import { UserService } from "~/controllers/userController";
+import { fetchUserIdPromise } from "~/services/serviceUser";
 import crypto from "crypto";
 
 export class ConversationManager {
@@ -12,7 +13,7 @@ export class ConversationManager {
   static async ensureConversation(ctx: any, state: any): Promise<number> {
     let conversationId = await state.get("conversationId");
     if (!conversationId) {
-      const idCliente = await UserService.fetchUserId(ctx.from);
+      const idCliente = await fetchUserIdPromise(ctx.from);
       if (!idCliente) {
         throw new Error(`No se encontró un cliente con el número ${ctx.from}.`);
       }
@@ -27,7 +28,7 @@ export class ConversationManager {
     return crypto.createHash("sha256").update(content + timestamp).digest("hex");
   }
 
-  // Método unificado para registrar interacciones, como antes
+  // Método unificado para registrar interacciones
   static async logInteraction(ctx: any, state: any, role: "user" | "assistant", content: string, idUsuario?: number): Promise<void> {
     // Ejemplo de verificación opcional:
     const timestamp = Date.now();

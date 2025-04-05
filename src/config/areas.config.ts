@@ -47,7 +47,7 @@ Ten en cuenta que el tiempo de espera aproximado es de ${waitingTime} minutos. �
       promptFile: "prompt_Universal.txt",
       idApartamento: 1,
       fallbackResponse: `❌ No encontré información exacta, pero puedo ayudarte a encontrar la mejor opción. ¿Qué necesitas en términos de seguridad?`,
-      postOptions: "¿Deseas seguir conversando o ser atendido por un asesor? Puedo transferirte a un asesor para una cotización personalizada o para brindarte más información.\n\n1️⃣ *Seguir conversando*\n2️⃣ *Atención personalizada*",
+      postOptions: "Ahora que conoces el proceso, ¿qué prefieres hacer? Puedes seguir conversando para obtener más información o, si lo deseas, te puedo transferir a un asesor para una cotización personalizada.\n\n1️⃣ *Seguir conversando*\n2️⃣ *Atención personalizada*",
       analysisPromptFile: "prompt_AnalisisConversacion_Ventas.txt",
     },
     agent: {
@@ -79,7 +79,7 @@ Ten en cuenta que el tiempo de espera aproximado es de ${waitingTime} minutos. �
       idApartamento: 3,
       fallbackResponse:
         "❌ No se encontró información exacta sobre tu problema. ¿Podrías darme más detalles?",
-        postOptions: "¿Deseas seguir conversando o ser atendido por un especialista? Puedo transferirte a un experto en soporte para resolver tu problema técnico de forma rápida y efectiva.\n\n1️⃣ *Seguir conversando*\n2️⃣ *Atención personalizada*",
+        postOptions: "Ahora que ya hemos conversado, ¿prefieres seguir conversando o que te transfiera a un especialista? Puedo enviarte a un experto en soporte para resolver tu problema técnico de forma rápida y efectiva.\n\n1️⃣ *Seguir conversando*\n2️⃣ *Atención personalizada*",
       analysisPromptFile: "prompt_AnalisisConversacion_Soporte.txt",
     },
     agent: {
@@ -111,7 +111,7 @@ Ten en cuenta que el tiempo de espera aproximado es de ${waitingTime} minutos. �
       idApartamento: 2,
       fallbackResponse:
         "❌ No se encontró información exacta sobre tu consulta de monitoreo. ¿Podrías darme más detalles?",
-        postOptions: "¿Desea seguir conversando o ser atendido por un experto en Central de Monitoreo? Puedo transferirlo para asistencia personalizada en configuración o solución de inconvenientes.\n\n1️⃣ *Seguir conversando*\n2️⃣ *Atención personalizada*",
+        postOptions: "Ahora que hemos conversado, ¿prefieres seguir conversando o que te transfiera a un experto en Central de Monitoreo? Puedo asistirte de manera personalizada en la configuración o en la solución de inconvenientes.\n\n1️⃣ *Seguir conversando*\n2️⃣ *Atención personalizada*",
       analysisPromptFile: "prompt_AnalisisConversacion_Central.txt",
     },
     agent: {

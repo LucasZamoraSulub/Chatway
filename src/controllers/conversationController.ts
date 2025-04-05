@@ -2,46 +2,54 @@ import * as convRepo from "../model/conversationRepository";
 
 export class ConversationService {
   // Inicia una nueva conversación para un cliente
-  static async startConversation(idCliente: number): Promise<number> {
-    try {
-      const conversationId = await convRepo.createConversation(idCliente);
-      return conversationId;
-    } catch (error) {
-      console.error("ConversationService - startConversation error:", error);
-      throw error;
-    }
+  static startConversation(idCliente: number): Promise<number> {
+    return new Promise((resolve, reject) => {
+      convRepo.createConversation(idCliente, (err: any, conversationId: number) => {
+        if (err) {
+          console.error("ConversationService - startConversation error:", err);
+          return reject(err);
+        }
+        resolve(conversationId);
+      });
+    });
   }
 
-  // Registra una interacción completa (pregunta y respuesta) en la conversación
-  static async recordMessage(
+  // Registra un mensaje en la conversación
+  static recordMessage(
     conversationId: number,
     mensajeUsuario: string,
     respuesta: string,
     options?: { idUsuario?: number; idApartamento?: number }
   ): Promise<void> {
-    try {
-      await convRepo.addConversationMessage(
+    return new Promise((resolve, reject) => {
+      convRepo.addConversationMessage(
         conversationId,
         mensajeUsuario,
         respuesta,
-        options
+        options,
+        (err: any, res: any) => {
+          if (err) {
+            console.error("ConversationService - recordMessage error:", err);
+            return reject(err);
+          }
+          resolve();
+        }
       );
-    } catch (error) {
-      console.error("ConversationService - recordMessage error:", error);
-      throw error;
-    }
+    });
   }
 
   // Recupera el contexto de la conversación (últimos mensajes) para mantener la continuidad del chat
-  static async getContext(
+  static getContext(
     conversationId: number,
     limit: number = 3
   ): Promise<{ role: string; content: string }[]> {
-    try {
-      const contextRows = await convRepo.getLastMessages(conversationId, limit);
-      // Transformar cada fila en entradas con { role, content }
-      const formattedContext = contextRows.reduce(
-        (acc: { role: string; content: string }[], row: any) => {
+    return new Promise((resolve, reject) => {
+      convRepo.getLastMessages(conversationId, limit, (err: any, contextRows: any[]) => {
+        if (err) {
+          console.error("ConversationService - getContext error:", err);
+          return reject(err);
+        }
+        const formattedContext = contextRows.reduce((acc: { role: string; content: string }[], row: any) => {
           if (row.mensaje_usuario) {
             acc.push({ role: "user", content: row.mensaje_usuario });
           }
@@ -49,100 +57,99 @@ export class ConversationService {
             acc.push({ role: "assistant", content: row.respuesta });
           }
           return acc;
-        },
-        []
-      );
-      return formattedContext;
-    } catch (error) {
-      console.error("ConversationService - getContext error:", error);
-      throw error;
-    }
+        }, []);
+        resolve(formattedContext);
+      });
+    });
   }
 
   // Finaliza la conversación actual actualizando su estado a 'finalizada'
-  static async closeConversation(conversationId: number): Promise<void> {
-    try {
-      await convRepo.updateConversationStatus(conversationId, "finalizada");
-    } catch (error) {
-      console.error("ConversationService - closeConversation error:", error);
-      throw error;
-    }
+  static closeConversation(conversationId: number): Promise<void> {
+    return new Promise((resolve, reject) => {
+      convRepo.updateConversationStatus(conversationId, "finalizada", (err: any, res: any) => {
+        if (err) {
+          console.error("ConversationService - closeConversation error:", err);
+          return reject(err);
+        }
+        resolve();
+      });
+    });
   }
 
-  // Obtener todos los mensajes de una conversación
-  static async getAllMessages(conversationId: number): Promise<any[]> {
-    try {
-      const messages = await convRepo.getAllMessages(conversationId);
-      return messages;
-    } catch (error) {
-      console.error("ConversationService - getAllMessages error:", error);
-      throw error;
-    }
+  // Obtiene todos los mensajes de una conversación
+  static getAllMessages(conversationId: number): Promise<any[]> {
+    return new Promise((resolve, reject) => {
+      convRepo.getAllMessages(conversationId, (err: any, messages: any[]) => {
+        if (err) {
+          console.error("ConversationService - getAllMessages error:", err);
+          return reject(err);
+        }
+        resolve(messages);
+      });
+    });
   }
 
   // Obtiene el bot asignado a un área
-  static async getBotForArea(idApartamento: number): Promise<number> {
-    try {
-      const idUsuario = await convRepo.getBotForArea(idApartamento);
-      return idUsuario;
-    } catch (error) {
-      console.error("ConversationService - getBotForArea error:", error);
-      throw error;
-    }
+  static getBotForArea(idApartamento: number): Promise<number> {
+    return new Promise((resolve, reject) => {
+      convRepo.getBotForArea(idApartamento, (err: any, idUsuario: number) => {
+        if (err) {
+          console.error("ConversationService - getBotForArea error:", err);
+          return reject(err);
+        }
+        resolve(idUsuario);
+      });
+    });
   }
 
-  // Registra una interacción (mensaje del usuario o respuesta del bot) en la conversación
-  static async recordInteraction(
+  // Registra una interacción en la conversación
+  static recordInteraction(
     conversationId: number,
     role: "user" | "assistant",
     content: string,
     idUsuario?: number
   ): Promise<void> {
-    try {
-      await convRepo.insertInteraction(
-        conversationId,
-        role,
-        content,
-        idUsuario
-      );
-    } catch (error) {
-      console.error("ConversationService - recordInteraction error:", error);
-      throw error;
-    }
+    return new Promise((resolve, reject) => {
+      convRepo.insertInteraction(conversationId, role, content, idUsuario, (err: any, res: any) => {
+        if (err) {
+          console.error("ConversationService - recordInteraction error:", err);
+          return reject(err);
+        }
+        resolve();
+      });
+    });
   }
 
   // Actualiza el estado_conversacion de la conversación
-  static async updateState(
-    idConversacion: number,
-    estado: number
-  ): Promise<void> {
-    try {
-      await convRepo.updateConversationState(idConversacion, estado);
-      console.log(
-        `Estado de conversación (estado_conversacion) actualizado a: ${estado}`
-      );
-    } catch (error) {
-      console.error("ConversationService - updateState error:", error);
-      throw error;
-    }
+  static updateState(idConversacion: number, estado: number): Promise<void> {
+    return new Promise((resolve, reject) => {
+      convRepo.updateConversationState(idConversacion, estado, (err: any, res: any) => {
+        if (err) {
+          console.error("ConversationService - updateState error:", err);
+          return reject(err);
+        }
+        console.log(`Estado de conversación actualizado a: ${estado}`);
+        resolve();
+      });
+    });
   }
 
   // Actualiza el resultado_conversacion de la conversación
-  static async updateResult(
-    idConversacion: number,
-    resultado: number
-  ): Promise<void> {
-    try {
-      await convRepo.updateConversationResult(idConversacion, resultado);
-      console.log(`Resultado de conversación actualizado a: ${resultado}`);
-    } catch (error) {
-      console.error("ConversationService - updateResult error:", error);
-      throw error;
-    }
+  static updateResult(idConversacion: number, resultado: number): Promise<void> {
+    return new Promise((resolve, reject) => {
+      convRepo.updateConversationResult(idConversacion, resultado, (err: any, res: any) => {
+        if (err) {
+          console.error("ConversationService - updateResult error:", err);
+          return reject(err);
+        }
+        console.log(`Resultado de conversación actualizado a: ${resultado}`);
+        resolve();
+      });
+    });
   }
 
-  // Método para crear métricas de conversación
-  static async createConversationMetrics(params: {
+  // Crea métricas de conversación
+  static createConversationMetrics(params: {
     resumen: string;
     nivelInteres?: string;
     nivelConocimiento?: string;
@@ -153,32 +160,27 @@ export class ConversationService {
     barrerasObjeciones?: number;
     probabilidadVenta?: number;
   }): Promise<number> {
-    try {
-      const idMetricas = await convRepo.createConversationMetrics(params);
-      return idMetricas;
-    } catch (error) {
-      console.error(
-        "ConversationService - createConversationMetrics error:",
-        error
-      );
-      throw error;
-    }
+    return new Promise((resolve, reject) => {
+      convRepo.createConversationMetrics(params, (err: any, insertId: number) => {
+        if (err) {
+          console.error("ConversationService - createConversationMetrics error:", err);
+          return reject(err);
+        }
+        resolve(insertId);
+      });
+    });
   }
-  
 
-  // Método para actualizar la conversación asignándole el ID de métricas
-  static async updateConversationMetrics(
-    conversationId: number,
-    idMetricas: number
-  ): Promise<void> {
-    try {
-      await convRepo.updateConversationMetrics(conversationId, idMetricas);
-    } catch (error) {
-      console.error(
-        "ConversationService - updateConversationMetrics error:",
-        error
-      );
-      throw error;
-    }
+  // Actualiza la conversación asignándole el ID de métricas
+  static updateConversationMetrics(conversationId: number, idMetricas: number): Promise<void> {
+    return new Promise((resolve, reject) => {
+      convRepo.updateConversationMetrics(conversationId, idMetricas, (err: any, res: any) => {
+        if (err) {
+          console.error("ConversationService - updateConversationMetrics error:", err);
+          return reject(err);
+        }
+        resolve();
+      });
+    });
   }
 }

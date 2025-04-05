@@ -18,6 +18,9 @@ import { postAreaFlow } from "./postAreaFlow";
 // flujos de faq
 import { postFAQFlow } from "./postFAQFlow";
 import { postFAQAreaFlow } from "./postFAQAreaFlow";
+import { validationFlow } from "./validationFlow";
+import { contactInfoFlow } from "./ContactInfoFlow";
+import { contactInfoValidationFlow } from "./contactInfoValidationFlow";
 
 export const flow = createFlow([
     mainFlow,
@@ -35,6 +38,9 @@ export const flow = createFlow([
     postAreaFlow,
     postFAQFlow,
     postFAQAreaFlow,
+    validationFlow,
+    contactInfoFlow,
+    contactInfoValidationFlow,
 ]);
 
 

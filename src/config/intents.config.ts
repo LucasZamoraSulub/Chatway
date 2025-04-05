@@ -11,7 +11,7 @@ export const intentsConfig: IntentConfig[] = [
   // Intenciones para redireccionar a flujos (usadas en el enrutamiento por IA)
   {
     name: "VENTAS",
-    keywords: ["ventas", "comprar", "precio", "cotización", "oferta", "producto", "tienda"],
+    keywords: ["ventas", "comprar", "precio", "cotización", "oferta", "producto", "tienda", "recomendación"],
     description: "Preguntas sobre productos, precios o cotizaciones.",
     flowName: "selectServiceModeFlow",
     forRouting: true,
@@ -27,7 +27,7 @@ export const intentsConfig: IntentConfig[] = [
   },
   {
     name: "CENTRAL_MONITOREO",
-    keywords: ["central", "monitoreo", "vigilancia", "cámaras", "configuración", "sistema de seguridad"],
+    keywords: ["central", "monitoreo", "vigilancia", "configuración", "sistema de seguridad"],
     description: "Preguntas sobre sistemas de monitoreo y configuración de dispositivos.",
     flowName: "selectServiceModeFlow",
     forRouting: true,
