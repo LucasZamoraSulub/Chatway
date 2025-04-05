@@ -1,7 +1,7 @@
 import { createBot } from "@builderbot/bot";
 import { MemoryDB as Database } from "@builderbot/bot";
 import { flow } from "./bot/index";
-import { poolPromise } from "./database/db";
+import  poolPromise from "./database/db";
 import { provider } from "./provider/index";
 // import { aiServices } from "./services/aiServices";
 import { config } from "./config";
