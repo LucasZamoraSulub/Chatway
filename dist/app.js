@@ -313,7 +313,7 @@ class aiServices {
             const completion = await this.openAI.chat.completions.create({
                 model: config.Model,
                 messages: [{ role: "system", content: prompt }, ...limitedMessages],
-                max_tokens: options?.max_tokens ?? 150,
+                max_tokens: options?.max_tokens ?? 350,
                 temperature: options?.temperature ?? 0.7,
             });
             const anwer = completion.choices[0].message?.content || "No response";

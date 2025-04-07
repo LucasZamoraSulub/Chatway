@@ -19,7 +19,7 @@ class aiServices {
       const completion = await this.openAI.chat.completions.create({
         model: config.Model,
         messages: [{ role: "system", content: prompt }, ...limitedMessages],
-        max_tokens: options?.max_tokens ?? 150,      // Usa el valor proporcionado o el default. Limitar la respuesta a 10 tokens temporalmente, modificar a 150 en producción
+        max_tokens: options?.max_tokens ?? 350,      // Usa el valor proporcionado o el default. Limitar la respuesta a 10 tokens temporalmente, modificar a 150 en producción
         temperature: options?.temperature ?? 0.7,     // Usa el valor proporcionado o el default. Opcional: Controlar la creatividad de la respuesta
         // max_tokens: 50, 
         // temperature: 0.7,
